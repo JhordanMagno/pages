@@ -51,7 +51,7 @@
     .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 18px; }
 
     /* App */
-    #app-screen { display: none; max-width: 1380px; margin: 0 auto; padding: 20px; }
+    #app-screen { display: none; max-width: 1420px; margin: 0 auto; padding: 20px; }
     header {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
       padding-bottom: 18px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px;
@@ -62,7 +62,7 @@
 
     /* KPIs */
     .kpis {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
       gap: 12px; margin-bottom: 20px;
     }
     .kpi {
@@ -97,7 +97,7 @@
       background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
       overflow-x: auto;
     }
-    table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    table { width: 100%; border-collapse: collapse; min-width: 960px; }
     th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 13px; vertical-align: top; }
     th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
     tr:last-child td { border-bottom: none; }
@@ -110,6 +110,11 @@
     .b-ess { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.35); }
     .b-basic { background: rgba(156,163,175,0.15); color: var(--muted); border: 1px solid rgba(156,163,175,0.3); }
     .b-intent { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.35); margin-top: 4px; }
+    .b-online { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.4); margin-left: 4px; }
+    .dot-online {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); margin-right: 4px; vertical-align: middle;
+    }
     .mono { font-family: monospace; font-size: 11px; color: var(--muted); }
     .small { font-size: 12px; color: var(--muted); margin-top: 3px; }
     select.plan-select {
@@ -154,6 +159,7 @@
 
     <section class="kpis">
       <div class="kpi"><div class="label">Total de Usuários</div><div class="val" id="kpi-total">0</div></div>
+      <div class="kpi green"><div class="label">Online Agora</div><div class="val" id="kpi-online">0</div></div>
       <div class="kpi gold"><div class="label">Plano PRO</div><div class="val" id="kpi-pro">0</div></div>
       <div class="kpi blue"><div class="label">Plano Essencial</div><div class="val" id="kpi-ess">0</div></div>
       <div class="kpi"><div class="label">Plano Básico</div><div class="val" id="kpi-basic">0</div></div>
@@ -171,6 +177,7 @@
         <input id="search-users" class="input" placeholder="Buscar por nome, sobrenome, e-mail, telefone, cidade ou UID..." />
         <div class="filter-chips">
           <button class="chip active" data-plan="ALL">Todos</button>
+          <button class="chip" data-plan="ONLINE">Online</button>
           <button class="chip" data-plan="PRO">PRO</button>
           <button class="chip" data-plan="ESSENTIAL">Essencial</button>
           <button class="chip" data-plan="BASIC">Básico</button>
@@ -185,7 +192,7 @@
               <th>Usuário / UID</th>
               <th>Contato &amp; Local</th>
               <th>Plano &amp; Intenção</th>
-              <th>Sync &amp; Versão</th>
+              <th>Atividade &amp; Sync</th>
               <th>Gerenciar Plano</th>
             </tr>
           </thead>
@@ -199,7 +206,7 @@
     <!-- ABA LOGS -->
     <div id="tab-logs" style="display:none;">
       <div class="toolbar">
-        <input id="search-logs" class="input" placeholder="Filtrar eventos por ação (ex: UPGRADE_CLIQUE_PRO, PERFIL_CAPTADO), nome ou e-mail..." />
+        <input id="search-logs" class="input" placeholder="Filtrar eventos por ação (ex: UPGRADE_CLIQUE_PRO, APP_ABERTO), origem, nome ou e-mail..." />
       </div>
       <div class="table-wrap">
         <table>
@@ -208,7 +215,7 @@
               <th>Data / Hora</th>
               <th>Ação</th>
               <th>Usuário</th>
-              <th>Detalhes</th>
+              <th>Detalhes &amp; Aparelho</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -232,7 +239,6 @@
       getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, query, orderBy, limit
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-    // Configuração do seu projeto Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBDp8u-KbrKGXTHCNMKAtb_L9GOiSur31g",
       authDomain: "agenda-magnus.firebaseapp.com",
@@ -247,7 +253,6 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    // Conecta diretamente ao banco nomeado agendamagnus-db
     const db = getFirestore(app, "agendamagnus-db");
 
     let allUsers = [];
@@ -278,13 +283,25 @@
       return "BASIC";
     }
 
+    function hasUpgradeIntent(u) {
+      return Boolean(u.lastUpgradeIntentOrigin || u.lastUpgradeIntentTargetPlan || u.lastUpgradeIntent);
+    }
+
+    function formatUpgradeIntent(u) {
+      if (u.lastUpgradeIntentTargetPlan || u.lastUpgradeIntentOrigin) {
+        const target = u.lastUpgradeIntentTargetPlan || "PRO";
+        const origin = u.lastUpgradeIntentOrigin ? ` • ${u.lastUpgradeIntentOrigin}` : "";
+        return `${target}${origin}`;
+      }
+      return u.lastUpgradeIntent || "";
+    }
+
     function planBadge(plan) {
       if (plan === "PRO") return `<span class="badge b-pro">👑 PRO</span>`;
       if (plan === "ESSENTIAL") return `<span class="badge b-ess">⭐ ESSENCIAL</span>`;
       return `<span class="badge b-basic">BÁSICO</span>`;
     }
 
-    // Login handlers
     $("btn-email-login").addEventListener("click", async () => {
       $("login-error").textContent = "";
       try {
@@ -305,7 +322,6 @@
 
     $("btn-logout").addEventListener("click", () => signOut(auth));
 
-    // Auth Observer
     onAuthStateChanged(auth, async (user) => {
       if (unsubUsers) { unsubUsers(); unsubUsers = null; }
       if (unsubLogs) { unsubLogs(); unsubLogs = null; }
@@ -331,7 +347,8 @@
 
     function startRealtimeListeners() {
       unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-        allUsers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        allUsers = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.lastSeenAtMillis || b.updatedAtMillis || 0) - (a.lastSeenAtMillis || a.updatedAtMillis || 0));
         updateKpis();
         renderUsers();
       }, (err) => {
@@ -344,7 +361,6 @@
         updateKpis();
         renderLogs();
       }, () => {
-        // Fallback caso ainda não haja documentos com timestampMillis
         onSnapshot(collection(db, "activity_logs"), (snap) => {
           allLogs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
             .sort((a, b) => (b.timestampMillis || 0) - (a.timestampMillis || 0));
@@ -355,16 +371,18 @@
     }
 
     function updateKpis() {
-      let pro = 0, ess = 0, basic = 0;
+      let pro = 0, ess = 0, basic = 0, online = 0;
       allUsers.forEach((u) => {
         const p = normalizePlan(u);
         if (p === "PRO") pro++;
         else if (p === "ESSENTIAL") ess++;
         else basic++;
+        if (u.isOnline === true) online++;
       });
       const upgrades = allLogs.filter((l) => String(l.action || "").includes("UPGRADE_CLIQUE_PRO")).length;
 
       $("kpi-total").textContent = allUsers.length;
+      $("kpi-online").textContent = online;
       $("kpi-pro").textContent = pro;
       $("kpi-ess").textContent = ess;
       $("kpi-basic").textContent = basic;
@@ -377,12 +395,13 @@
       const q = $("search-users").value.trim().toLowerCase();
       const filtered = allUsers.filter((u) => {
         const plan = normalizePlan(u);
-        if (currentPlanFilter === "UPGRADE" && !u.lastUpgradeIntent) return false;
+        if (currentPlanFilter === "ONLINE" && u.isOnline !== true) return false;
+        if (currentPlanFilter === "UPGRADE" && !hasUpgradeIntent(u)) return false;
         if (["PRO", "ESSENTIAL", "BASIC"].includes(currentPlanFilter) && plan !== currentPlanFilter) return false;
         if (!q) return true;
         const hay = [
           u.id, u.nome, u.sobrenome, u.nomeCompleto, u.email,
-          u.telefone, u.phone, u.telefoneDigits, u.cidade, u.estado, u.bairro
+          u.telefone, u.phone, u.telefoneDigits, u.cidade, u.estado, u.bairro, u.lastAction
         ].join(" ").toLowerCase();
         return hay.includes(q);
       });
@@ -400,11 +419,14 @@
         const waLink = digits.length >= 10 ? `https://wa.me/${digits.startsWith("55") ? digits : "55" + digits}` : "";
         const loc = [u.bairro, u.cidade, u.estado].filter(Boolean).join(" • ") || "Local não informado";
         const sync = u.lastSyncAtFormatted || u.updatedAtFormatted || "Sem sync";
+        const intentLabel = formatUpgradeIntent(u);
 
         return `
           <tr>
             <td>
-              <strong>${esc(fullName)}</strong> ${u.isFounderTester ? '<span class="badge b-pro">FOUNDER</span>' : ''}
+              <strong>${esc(fullName)}</strong>
+              ${u.isFounderTester ? '<span class="badge b-pro">FOUNDER</span>' : ''}
+              ${u.isOnline === true ? '<span class="badge b-online"><span class="dot-online"></span>ONLINE</span>' : ''}
               <div class="small">${esc(u.email || "Sem e-mail")}</div>
               <div class="mono" style="margin-top:4px;cursor:pointer;" onclick="copyUid('${esc(u.id)}')" title="Clique para copiar UID">UID: ${esc(u.id)} 📋</div>
             </td>
@@ -415,12 +437,14 @@
             </td>
             <td>
               ${planBadge(plan)}
-              ${u.lastUpgradeIntent ? `<div><span class="badge b-intent">🔥 ${esc(u.lastUpgradeIntent)}</span></div>` : ''}
+              ${intentLabel ? `<div><span class="badge b-intent">🔥 ${esc(intentLabel)}</span></div>` : ''}
               ${u.lastUpgradeIntentAtFormatted ? `<div class="small">${esc(u.lastUpgradeIntentAtFormatted)}</div>` : ''}
             </td>
             <td>
-              <div>${esc(sync)}</div>
-              <div class="small">Versão: ${esc(u.appVersion || "-")}</div>
+              <div>${u.lastAction ? `<strong>${esc(u.lastAction)}</strong>` : esc(sync)}</div>
+              <div class="small">Visto: ${esc(u.lastSeenAtFormatted || sync)}</div>
+              <div class="small">Sync: ${esc(sync)} • v${esc(u.appVersion || "-")}</div>
+              ${u.deviceModel ? `<div class="mono">${esc(u.deviceModel)}</div>` : ''}
             </td>
             <td>
               <div style="display:flex;gap:6px;align-items:center;">
@@ -441,7 +465,8 @@
       const q = $("search-logs").value.trim().toLowerCase();
       const filtered = allLogs.filter((l) => {
         if (!q) return true;
-        return [l.action, l.nome, l.email, l.uid, l.currentPlan, l.targetPlan, l.id].join(" ").toLowerCase().includes(q);
+        return [l.action, l.origin, l.details, l.nome, l.email, l.uid, l.currentPlan, l.targetPlan, l.deviceModel, l.id]
+          .join(" ").toLowerCase().includes(q);
       });
 
       if (!filtered.length) {
@@ -461,8 +486,10 @@
               <div class="mono">${esc(l.uid || "")}</div>
             </td>
             <td>
-              <div>Plano atual: <strong>${esc(l.currentPlan || "-")}</strong>${l.targetPlan ? ` → <strong>${esc(l.targetPlan)}</strong>` : ''}</div>
-              <div class="small">Versão: ${esc(l.appVersion || "-")}</div>
+              ${l.origin ? `<div><strong>${esc(l.origin)}</strong></div>` : ''}
+              ${l.details ? `<div class="small">${esc(l.details)}</div>` : ''}
+              ${(l.currentPlan || l.targetPlan) ? `<div class="small">Plano: <strong>${esc(l.currentPlan || "-")}</strong>${l.targetPlan ? ` → <strong>${esc(l.targetPlan)}</strong>` : ''}</div>` : ''}
+              <div class="mono">v${esc(l.appVersion || "-")} ${l.deviceModel ? "• " + esc(l.deviceModel) : ""}</div>
             </td>
             <td>
               <button class="btn btn-sm btn-danger" onclick="deleteLog('${esc(l.id)}')">Excluir</button>
@@ -500,7 +527,6 @@
       }
     };
 
-    // Tabs & Filters
     document.querySelectorAll(".tab").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
