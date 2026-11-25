@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM Comercial — Agenda Magnu’s</title>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b1a;
+      --panel: #11182c;
+      --panel-2: #0c1222;
+      --line: #253252;
+      --gold: #f5c542;
+      --gold-dim: rgba(245, 197, 66, 0.14);
+      --green: #22c55e;
+      --blue: #38bdf8;
+      --red: #ef5350;
+      --text: #f5f8ff;
+      --muted: #9eb0c9;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Work Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+    .wrap { max-width: 1380px; margin: 0 auto; padding: 20px; }
+
+    /* Login */
+    #login-view {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      width: 100%;
+      max-width: 420px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .login-box h1 { font-size: 24px; margin-bottom: 6px; }
+    .login-box h1 span { color: var(--gold); }
+    .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+
+    /* Form Controls */
+    .input, select, textarea {
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+    .input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    textarea { resize: vertical; min-height: 76px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.92; }
+    .btn-gold { background: var(--gold); color: #090e1a; }
+    .btn-outline { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+    .btn-green { background: rgba(34, 197, 94, 0.16); color: var(--green); border-color: rgba(34, 197, 94, 0.35); }
+    .btn-red { background: rgba(239, 83, 80, 0.16); color: var(--red); border-color: rgba(239, 83, 80, 0.35); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+    .btn-full { width: 100%; }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .brand h1 { font-size: 21px; }
+    .brand h1 span { color: var(--gold); }
+    .brand small { color: var(--muted); font-size: 12px; }
+    .header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    /* Role Badge */
+    .role-pill {
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid rgba(245, 197, 66, 0.35);
+    }
+
+    /* Tabs */
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .tab {
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tab.active { background: var(--gold-dim); color: var(--gold); border-color: var(--gold); }
+
+    /* KPIs */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .kpi small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+    .kpi strong { display: block; font-size: 24px; margin-top: 6px; color: var(--text); }
+    .kpi.gold strong { color: var(--gold); }
+    .kpi.green strong { color: var(--green); }
+    .kpi.blue strong { color: var(--blue); }
+    .kpi.red strong { color: var(--red); }
+
+    /* Layout Cards */
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-bottom: 20px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .chart-box { position: relative; height: 280px; }
+
+    /* Toolbar & Table */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
+    .toolbar .input { flex: 1; min-width: 220px; }
+    .toolbar select { width: auto; min-width: 170px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
+    table { width: 100%; border-collapse: collapse; min-width: 960px; }
+    th, td { padding: 11px 13px; text-align: left; border-bottom: 1px solid #1d2842; font-size: 13px; vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f1629; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .b-gold { background: var(--gold-dim); color: var(--gold); }
+    .b-green { background: rgba(34,197,94,0.16); color: var(--green); }
+    .b-blue { background: rgba(56,189,248,0.16); color: var(--blue); }
+    .b-red { background: rgba(239,83,80,0.16); color: var(--red); }
+    .b-muted { background: rgba(158,176,201,0.16); color: var(--muted); }
+    .sub-txt { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* Modal */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 15, 0.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal {
+      width: 100%;
+      max-width: 720px;
+      max-height: 92vh;
+      overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .form-full { grid-column: 1 / -1; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--gold);
+      color: #090e1a;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      z-index: 200;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login-view">
+    <div class="login-box">
+      <h1>CRM <span>Agenda Magnu’s</span></h1>
+      <p>Portal Comercial em Tempo Real • SDRs &amp; Gestão</p>
+      <div style="text-align:left; display:grid; gap:10px; margin-bottom:14px;">
+        <input id="login-email" class="input" type="email" placeholder="Seu e-mail cadastrado" />
+        <input id="login-pass" class="input" type="password" placeholder="Sua senha" />
+      </div>
+      <button id="btn-email-login" class="btn btn-gold btn-full">Entrar com E-mail e Senha</button>
+      <button id="btn-google-login" class="btn btn-outline btn-full" style="margin-top:10px;">Entrar com Google</button>
+      <p id="login-error" style="color:var(--red); font-size:12px; margin-top:14px; min-height:16px;"></p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-view" class="wrap hidden">
+    <header>
+      <div class="brand">
+        <h1>CRM Comercial — Agenda <span>Magnu’s</span></h1>
+        <small id="user-subtitle">Conectando...</small>
+      </div>
+      <div class="header-actions">
+        <span id="role-pill" class="role-pill">CARREGANDO</span>
+        <button id="btn-new-lead" class="btn btn-gold">+ Novo Lead</button>
+        <button id="btn-export-csv" class="btn btn-outline hidden">Exportar CSV (Diretoria)</button>
+        <button id="btn-logout" class="btn btn-outline">Sair</button>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">📊 Painel &amp; Gráficos</button>
+      <button class="tab" data-tab="leads">📋 Prospecção &amp; Leads (<span id="tab-leads-count">0</span>)</button>
+      <button class="tab hidden" id="tab-btn-team" data-tab="team">👥 Equipe &amp; Acessos (Diretoria)</button>
+    </div>
+
+    <!-- ABA 1: DASHBOARD -->
+    <section id="tab-dashboard">
+      <div class="kpis" id="kpi-container"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span id="chart1-title">Funil por Status dos Leads</span>
+            <small style="color:var(--muted); font-size:12px;">Tempo real</small>
+          </div>
+          <div class="chart-box"><canvas id="chart-status"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span id="chart2-title">Ranking de Vendas PRO / Motivos de Perda</span>
+            <small style="color:var(--muted); font-size:12px;">Mês atual</small>
+          </div>
+          <div class="chart-box"><canvas id="chart-secondary"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Tabela de Ranking do Squad (visível para Gestor e Diretoria) -->
+      <div id="squad-ranking-card" class="card hidden">
+        <div class="card-title">
+          <span>Desempenho do Squad (Tempo Real)</span>
+          <small style="color:var(--muted); font-size:12px;">Meta: 44 vendas PRO/SDR</small>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>SDR / Código</th>
+                <th>Squad</th>
+                <th>Leads</th>
+                <th>Em Teste</th>
+                <th>Vendas PRO</th>
+                <th>Vendas Essencial</th>
+                <th>Conversão</th>
+                <th>Comissão Estimada</th>
+              </tr>
+            </thead>
+            <tbody id="squad-ranking-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 2: LEADS -->
+    <section id="tab-leads" class="hidden">
+      <div class="card">
+        <div class="toolbar">
+          <input id="filter-search" class="input" placeholder="Buscar por nome, telefone, cidade, profissão ou SDR..." />
+          <select id="filter-status">
+            <option value="ALL">Todos os Status</option>
+            <option>Novo Lead</option>
+            <option>Tentativa de Contato</option>
+            <option>Em Conversa</option>
+            <option>Vídeo/Demo Enviado</option>
+            <option>App Instalado / Teste</option>
+            <option>Fechado - Ganho</option>
+            <option>Perdido</option>
+          </select>
+          <select id="filter-plan">
+            <option value="ALL">Todos os Planos</option>
+            <option>Não Fechou</option>
+            <option>Básico (Grátis)</option>
+            <option>Essencial (R$ 34,90)</option>
+            <option>PRO (R$ 79,90)</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data / Follow-up</th>
+                <th>Lead &amp; Profissão</th>
+                <th>Contato &amp; Local</th>
+                <th>Status &amp; Plano</th>
+                <th>Perda / Observação</th>
+                <th>Responsável / Pix</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="leads-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 3: EQUIPE (APENAS DIRETORIA) -->
+    <section id="tab-team" class="hidden">
+      <div class="card">
+        <div class="card-title">Cadastrar / Autorizar SDR ou Gestor</div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">
+          Crie o usuário em <strong>Firebase Authentication &gt; Users</strong>, copie o <strong>UID</strong> dele e cadastre aqui para liberar o acesso ao CRM.
+        </p>
+        <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+          <div><label>UID do Firebase</label><input id="tm-uid" class="input" placeholder="Cole o UID aqui" /></div>
+          <div><label>Nome Completo</label><input id="tm-nome" class="input" placeholder="Ex.: João Silva" /></div>
+          <div><label>E-mail</label><input id="tm-email" class="input" placeholder="joao@email.com" /></div>
+          <div><label>Código</label><input id="tm-code" class="input" placeholder="Ex.: SDR-01 ou GESTOR-01" /></div>
+          <div>
+            <label>Perfil (Permissão)</label>
+            <select id="tm-role">
+              <option value="SDR">SDR</option>
+              <option value="GESTOR">GESTOR</option>
+              <option value="ADMIN">ADMIN (Diretoria)</option>
+            </select>
+          </div>
+          <div><label>Squad ID</label><input id="tm-squad" class="input" placeholder="Ex.: SQUAD-01" value="SQUAD-01" /></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button id="btn-save-member" class="btn btn-gold">Salvar Membro na Equipe</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Membros Cadastrados</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código / Nome</th>
+                <th>E-mail / UID</th>
+                <th>Perfil</th>
+                <th>Squad</th>
+                <th>Status</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="team-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL NOVO / EDITAR LEAD -->
+  <div id="lead-modal" class="modal-bg hidden">
+    <div class="modal">
+      <div class="card-title">
+        <span id="modal-title">Novo Lead</span>
+        <button id="btn-close-modal" class="btn btn-outline btn-sm">✕</button>
+      </div>
+      <form id="lead-form">
+        <input type="hidden" id="ld-id" />
+        <div class="form-grid">
+          <div><label>Nome do Lead *</label><input id="ld-nome" class="input" required /></div>
+          <div><label>Telefone / WhatsApp *</label><input id="ld-tel" class="input" placeholder="(47) 99999-9999" required /></div>
+          <div><label>E-mail</label><input id="ld-email" class="input" type="email" /></div>
+          <div><label>Profissão / Ramo *</label><input id="ld-prof" class="input" placeholder="Ex.: Barbeiro, Revendedora, MEI" required /></div>
+          <div><label>Cidade</label><input id="ld-cidade" class="input" /></div>
+          <div><label>Estado (UF)</label><input id="ld-uf" class="input" maxlength="2" placeholder="SC" /></div>
+          <div>
+            <label>Canal de Origem</label>
+            <select id="ld-canal">
+              <option>Ligação Fria</option>
+              <option>WhatsApp</option>
+              <option>Instagram Direct</option>
+              <option>Indicação</option>
+              <option>Presencial</option>
+            </select>
+          </div>
+          <div>
+            <label>Status do Lead</label>
+            <select id="ld-status">
+              <option>Novo Lead</option>
+              <option>Tentativa de Contato</option>
+              <option>Em Conversa</option>
+              <option>Vídeo/Demo Enviado</option>
+              <option>App Instalado / Teste</option>
+              <option>Fechado - Ganho</option>
+              <option>Perdido</option>
+            </select>
+          </div>
+          <div>
+            <label>Plano</label>
+            <select id="ld-plano">
+              <option>Não Fechou</option>
+              <option>Básico (Grátis)</option>
+              <option>Essencial (R$ 34,90)</option>
+              <option>PRO (R$ 79,90)</option>
+            </select>
+          </div>
+          <div>
+            <label>Motivo da Perda</label>
+            <select id="ld-perda">
+              <option>Não se aplica</option>
+              <option>Usa iPhone (Sem Android)</option>
+              <option>Achou Caro / Sem Caixa</option>
+              <option>Prefere Caderno / Não viu valor</option>
+              <option>Não respondeu / Sumiu</option>
+              <option>Usa Concorrente</option>
+              <option>Sem tempo agora</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div><label>Data 1º Contato</label><input id="ld-data" class="input" type="date" /></div>
+          <div><label>Próximo Follow-up</label><input id="ld-followup" class="input" type="date" /></div>
+          <div class="form-full">
+            <label>Observação / O que pode melhorar</label>
+            <textarea id="ld-obs" placeholder="Anote objeções reais, detalhes do cliente e o que melhorar na próxima abordagem..."></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-modal" class="btn btn-outline">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Salvar Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // 1. COLE AQUI O MESMO firebaseConfig DO SEU admin.html
+   const firebaseConfig = {
+      apiKey: "AIzaSyBDp8u-KbrKGXTHCNMKAtb_L9GOiSur31g",
+      authDomain: "agenda-magnus.firebaseapp.com",
+      projectId: "agenda-magnus",
+      storageBucket: "agenda-magnus.firebasestorage.app",
+      messagingSenderId: "458471195421",
+      appId: "1:458471195421:web:588b0569d8bd9f862f57f4",
+      measurementId: "G-D797QZR31L"
+    };
+
+    // 2. SEU UID DE DIRETORIA (JÁ PREENCHIDO COM O SEU UID)
+    const ADMIN_UID = "xCWYveQCqXfqQoZOixN7levgXOm1";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app, "agendamagnus-db");
+
+    let currentUser = null;
+    let currentProfile = null;
+    let allLeads = [];
+    let allMembers = [];
+    let unsubLeads = null;
+    let unsubTeam = null;
+    let chartStatus = null;
+    let chartSecondary = null;
+
+    // Utilitários
+    const $ = (id) => document.getElementById(id);
+    const fmtBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+
+    function showToast(msg) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.remove("hidden");
+      setTimeout(() => t.classList.add("hidden"), 2800);
+    }
+
+    // Cálculo exato da Escada de Comissão (PRO R$ 79,90 | Essencial R$ 34,90)
+    function calcSdrCommission(proCount, essCount) {
+      let comm = 0;
+      if (proCount > 0) comm += Math.min(proCount, 22) * 17;
+      if (proCount > 22) comm += Math.min(proCount - 22, 22) * 20;
+      if (proCount >= 44) comm += 120;
+      if (proCount > 44) comm += (proCount - 44) * 23;
+      if (proCount >= 100) comm += 250;
+      return comm + (essCount * 10);
+    }
+
+    function calcManagerEarnings(teamProCount, nSdrs = 5) {
+      const t1 = 22 * nSdrs;
+      const t2 = 44 * nSdrs;
+      const t3 = 100 * nSdrs;
+      let ov = 0;
+      if (teamProCount > 0) ov += Math.min(teamProCount, t1) * 5.0;
+      if (teamProCount > t1) ov += Math.min(teamProCount - t1, t2 - t1) * 6.5;
+      if (teamProCount > t2) ov += (teamProCount - t2) * 7.5;
+      let bon = 0;
+      if (teamProCount >= t1) bon += 200;
+      if (teamProCount >= t2) bon += 500;
+      if (teamProCount >= t3) bon += 800;
+      return ov + bon;
+    }
+
+    // Autenticação
+    $("btn-google-login").onclick = async () => {
+      $("login-error").textContent = "";
+      try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+      catch (e) { $("login-error").textContent = "Erro no login Google: " + e.message; }
+    };
+
+    $("btn-email-login").onclick = async () => {
+      $("login-error").textContent = "";
+      try {
+        await signInWithEmailAndPassword(auth, $("login-email").value.trim(), $("login-pass").value);
+      } catch (e) {
+        $("login-error").textContent = "E-mail ou senha inválidos.";
+      }
+    };
+
+    $("btn-logout").onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (unsubLeads) unsubLeads();
+      if (unsubTeam) unsubTeam();
+
+      if (!user) {
+        $("login-view").classList.remove("hidden");
+        $("app-view").classList.add("hidden");
+        return;
+      }
+
+      currentUser = user;
+      const memberSnap = await getDoc(doc(db, "crm_users", user.uid));
+
+      if (user.uid === ADMIN_UID) {
+        currentProfile = memberSnap.exists()
+          ? { ...memberSnap.data(), role: "ADMIN" }
+          : { nome: "Diretoria", email: user.email, code: "CEO", role: "ADMIN", squadId: "TODOS", ativo: true };
+      } else if (memberSnap.exists() && memberSnap.data().ativo !== false) {
+        currentProfile = memberSnap.data();
+      } else {
+        $("login-error").textContent = "Acesso não autorizado. Peça à gestão para cadastrar seu UID no CRM.";
+        await signOut(auth);
+        return;
+      }
+
+      $("login-view").classList.add("hidden");
+      $("app-view").classList.remove("hidden");
+      $("role-pill").textContent = `${currentProfile.role} • ${currentProfile.squadId || "GERAL"}`;
+      $("user-subtitle").textContent = `${currentProfile.nome} (${currentProfile.code || currentUser.email}) • Tempo real`;
+
+      // Permissões de interface
+      const isAdmin = currentProfile.role === "ADMIN";
+      const isGestor = currentProfile.role === "GESTOR";
+      $("tab-btn-team").classList.toggle("hidden", !isAdmin);
+      $("btn-export-csv").classList.toggle("hidden", !isAdmin);
+      $("squad-ranking-card").classList.toggle("hidden", !(isAdmin || isGestor));
+
+      startListeners();
+    });
+
+    function startListeners() {
+      let qLeads;
+      if (currentProfile.role === "ADMIN") {
+        qLeads = query(collection(db, "crm_leads"), orderBy("updatedAt", "desc"));
+      } else if (currentProfile.role === "GESTOR") {
+        qLeads = query(collection(db, "crm_leads"), where("squadId", "==", currentProfile.squadId));
+      } else {
+        qLeads = query(collection(db, "crm_leads"), where("sdrUid", "==", currentUser.uid));
+      }
+
+      unsubLeads = onSnapshot(qLeads, (snap) => {
+        allLeads = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        allLeads.sort((a, b) => (b.dataContato || "").localeCompare(a.dataContato || ""));
+        $("tab-leads-count").textContent = allLeads.length;
+        renderDashboard();
+        renderLeads();
+      }, (err) => {
+        showToast("Erro ao carregar leads: " + err.message);
+      });
+
+      if (currentProfile.role === "ADMIN") {
+        unsubTeam = onSnapshot(collection(db, "crm_users"), (snap) => {
+          allMembers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+          renderTeam();
+        });
+      }
+    }
+
+    // Render Dashboard + Gráficos
+    function renderDashboard() {
+      const today = todayISO();
+      const total = allLeads.length;
+      const emTeste = allLeads.filter((l) => l.status === "App Instalado / Teste").length;
+      const fechados = allLeads.filter((l) => l.status === "Fechado - Ganho");
+      const pro = fechados.filter((l) => l.plano === "PRO (R$ 79,90)").length;
+      const ess = fechados.filter((l) => l.plano === "Essencial (R$ 34,90)").length;
+      const followHoje = allLeads.filter((l) => l.proximoFollowup && l.proximoFollowup <= today && !["Fechado - Ganho", "Perdido"].includes(l.status)).length;
+      const conv = total > 0 ? ((fechados.length / total) * 100).toFixed(1) : "0.0";
+      const fatBruto = (pro * 79.90) + (ess * 34.90);
+
+      const isSDR = currentProfile.role === "SDR";
+      const ganhoEst = isSDR
+        ? calcSdrCommission(pro, ess)
+        : calcManagerEarnings(pro, 5);
+
+      const kpis = [
+        { label: "Total de Leads", val: total, cls: "" },
+        { label: "Em Teste no App", val: emTeste, cls: "blue" },
+        { label: "Vendas PRO (R$ 79,90)", val: pro, cls: "gold" },
+        { label: "Vendas Essencial (R$ 34,90)", val: ess, cls: "blue" },
+        { label: "Taxa de Conversão", val: `${conv}%`, cls: "green" },
+        { label: "Follow-ups Pendentes", val: followHoje, cls: followHoje > 0 ? "red" : "" },
+        isSDR
+          ? { label: "Sua Comissão Estimada", val: fmtBRL(ganhoEst), cls: "green" }
+          : { label: "Faturamento Bruto Equipe", val: fmtBRL(fatBruto), cls: "gold" }
+      ];
+
+      if (currentProfile.role === "GESTOR") {
+        kpis.push({ label: "Ganho Estimado Gestor (M1)", val: fmtBRL(ganhoEst), cls: "green" });
+      }
+
+      $("kpi-container").innerHTML = kpis.map((k) => `
+        <div class="kpi ${k.cls}">
+          <small>${k.label}</small>
+          <strong>${k.val}</strong>
+        </div>
+      `).join("");
+
+      // Gráfico 1: Status
+      const statuses = ["Novo Lead", "Tentativa de Contato", "Em Conversa", "Vídeo/Demo Enviado", "App Instalado / Teste", "Fechado - Ganho", "Perdido"];
+      const statusCounts = statuses.map((s) => allLeads.filter((l) => l.status === s).length);
+
+      if (chartStatus) chartStatus.destroy();
+      chartStatus = new Chart($("chart-status"), {
+        type: "bar",
+        data: {
+          labels: statuses,
+          datasets: [{
+            label: "Leads",
+            data: statusCounts,
+            backgroundColor: ["#64748b", "#94a3b8", "#38bdf8", "#818cf8", "#f5c542", "#22c55e", "#ef5350"],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#9eb0c9", font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: "#9eb0c9", precision: 0 }, grid: { color: "#1d2842" } }
+          }
+        }
+      });
+
+      // Gráfico 2: Para SDR = Motivos de Perda | Para Gestor/Admin = Vendas PRO por SDR
+      if (chartSecondary) chartSecondary.destroy();
+      if (isSDR) {
+        $("chart2-title").textContent = "Principais Motivos de Perda";
+        const perdas = {};
+        allLeads.filter((l) => l.status === "Perdido").forEach((l) => {
+          const m = l.motivoPerda || "Não informado";
+          perdas[m] = (perdas[m] || 0) + 1;
+        });
+        const labels = Object.keys(perdas).length ? Object.keys(perdas) : ["Sem perdas registradas"];
+        const vals = Object.keys(perdas).length ? Object.values(perdas) : [0];
+        chartSecondary = new Chart($("chart-secondary"), {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets: [{ data: vals, backgroundColor: ["#ef5350", "#f59e0b", "#38bdf8", "#a855f7", "#64748b", "#22c55e"] }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "right", labels: { color: "#dbe4f3", font: { size: 11 } } } }
+          }
+        });
+      } else {
+        $("chart2-title").textContent = "Vendas PRO por SDR (Squad)";
+        const bySdr = {};
+        allLeads.forEach((l) => {
+          const key = l.sdrNome || l.sdrCode || "Sem SDR";
+          if (!bySdr[key]) bySdr[key] = { squad: l.squadId || "-", leads: 0, teste: 0, pro: 0, ess: 0 };
+          bySdr[key].leads++;
+          if (l.status === "App Instalado / Teste") bySdr[key].teste++;
+          if (l.status === "Fechado - Ganho" && l.plano === "PRO (R$ 79,90)") bySdr[key].pro++;
+          if (l.status === "Fechado - Ganho" && l.plano === "Essencial (R$ 34,90)") bySdr[key].ess++;
+        });
+
+        const entries = Object.entries(bySdr).sort((a, b) => b[1].pro - a[1].pro);
+        chartSecondary = new Chart($("chart-secondary"), {
+          type: "bar",
+          data: {
+            labels: entries.map(([k]) => k),
+            datasets: [
+              { label: "PRO (R$ 79,90)", data: entries.map(([, v]) => v.pro), backgroundColor: "#f5c542", borderRadius: 6 },
+              { label: "Essencial (R$ 34,90)", data: entries.map(([, v]) => v.ess), backgroundColor: "#38bdf8", borderRadius: 6 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: "#dbe4f3" } } },
+            scales: {
+              x: { ticks: { color: "#9eb0c9" }, grid: { display: false } },
+              y: { ticks: { color: "#9eb0c9", precision: 0 }, grid: { color: "#1d2842" } }
+            }
+          }
+        });
+
+        $("squad-ranking-tbody").innerHTML = entries.length ? entries.map(([name, v]) => {
+          const c = v.leads > 0 ? (((v.pro + v.ess) / v.leads) * 100).toFixed(1) : "0.0";
+          const est = calcSdrCommission(v.pro, v.ess);
+          return `
+            <tr>
+              <td><strong>${name}</strong></td>
+              <td><span class="badge b-muted">${v.squad}</span></td>
+              <td>${v.leads}</td>
+              <td>${v.teste}</td>
+              <td><strong style="color:var(--gold);">${v.pro}</strong></td>
+              <td>${v.ess}</td>
+              <td>${c}%</td>
+              <td><strong style="color:var(--green);">${fmtBRL(est)}</strong></td>
+            </tr>
+          `;
+        }).join("") : `<tr><td colspan="8" style="text-align:center;color:var(--muted);">Nenhuma movimentação registrada ainda.</td></tr>`;
+      }
+    }
+
+    // Render Tabela de Leads
+    function renderLeads() {
+      const term = $("filter-search").value.toLowerCase().trim();
+      const st = $("filter-status").value;
+      const pl = $("filter-plan").value;
+      const isAdmin = currentProfile.role === "ADMIN";
+
+      const filtered = allLeads.filter((l) => {
+        if (st !== "ALL" && l.status !== st) return false;
+        if (pl !== "ALL" && l.plano !== pl) return false;
+        if (!term) return true;
+        return [l.nome, l.telefone, l.email, l.profissao, l.cidade, l.estado, l.sdrNome, l.observacao]
+          .filter(Boolean).join(" ").toLowerCase().includes(term);
+      });
+
+      $("leads-tbody").innerHTML = filtered.length ? filtered.map((l) => {
+        const waDigits = (l.telefone || "").replace(/\D/g, "");
+        const waLink = waDigits ? `https://wa.me/55${waDigits.replace(/^55/, "")}` : "#";
+        const stCls = l.status === "Fechado - Ganho" ? "b-green" : l.status === "Perdido" ? "b-red" : l.status === "App Instalado / Teste" ? "b-gold" : "b-blue";
+        const pixBadge = l.status === "Fechado - Ganho"
+          ? (l.pixConfirmado ? `<span class="badge b-green">PIX OK</span>` : `<span class="badge b-gold">Aguardando PIX</span>`)
+          : "";
+
+        return `
+          <tr>
+            <td>
+              <strong>${l.dataContato || "-"}</strong>
+              <div class="sub-txt">Follow-up: ${l.proximoFollowup || "-"}</div>
+            </td>
+            <td>
+              <strong>${l.nome || "-"}</strong>
+              <div class="sub-txt">${l.profissao || "-"} • ${l.canal || "-"}</div>
+            </td>
+            <td>
+              <div>${l.telefone || "-"}</div>
+              <div class="sub-txt">${l.email || ""}</div>
+              <div class="sub-txt">${[l.cidade, l.estado].filter(Boolean).join(" / ")}</div>
+            </td>
+            <td>
+              <span class="badge ${stCls}">${l.status || "-"}</span>
+              <div class="sub-txt">${l.plano || "Não Fechou"}</div>
+            </td>
+            <td style="max-width:240px;">
+              ${l.motivoPerda && l.motivoPerda !== "Não se aplica" ? `<div style="color:var(--red); font-size:12px; font-weight:600;">${l.motivoPerda}</div>` : ""}
+              <div class="sub-txt" style="white-space:pre-wrap;">${l.observacao || "-"}</div>
+            </td>
+            <td>
+              <div>${l.sdrNome || l.sdrCode || "-"}</div>
+              <div class="sub-txt">${l.squadId || "-"} ${pixBadge}</div>
+            </td>
+            <td>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" data-edit="${l.id}">Editar</button>
+                ${waDigits ? `<a class="btn btn-green btn-sm" href="${waLink}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+                ${isAdmin && l.status === "Fechado - Ganho" ? `<button class="btn btn-gold btn-sm" data-pix="${l.id}">${l.pixConfirmado ? "Desmarcar PIX" : "Confirmar PIX"}</button>` : ""}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+
+      document.querySelectorAll("[data-edit]").forEach((b) => {
+        b.onclick = () => openModal(allLeads.find((x) => x.id === b.dataset.edit));
+      });
+      document.querySelectorAll("[data-pix]").forEach((b) => {
+        b.onclick = async () => {
+          const lead = allLeads.find((x) => x.id === b.dataset.pix);
+          await updateDoc(doc(db, "crm_leads", lead.id), { pixConfirmado: !lead.pixConfirmado, updatedAt: serverTimestamp() });
+          showToast(lead.pixConfirmado ? "PIX desmarcado." : "PIX confirmado!");
+        };
+      });
+    }
+
+    // Modal Lead
+    function openModal(lead = null) {
+      $("modal-title").textContent = lead ? "Editar Lead" : "Novo Lead";
+      $("ld-id").value = lead?.id || "";
+      $("ld-nome").value = lead?.nome || "";
+      $("ld-tel").value = lead?.telefone || "";
+      $("ld-email").value = lead?.email || "";
+      $("ld-prof").value = lead?.profissao || "";
+      $("ld-cidade").value = lead?.cidade || "";
+      $("ld-uf").value = lead?.estado || "";
+      $("ld-canal").value = lead?.canal || "Ligação Fria";
+      $("ld-status").value = lead?.status || "Novo Lead";
+      $("ld-plano").value = lead?.plano || "Não Fechou";
+      $("ld-perda").value = lead?.motivoPerda || "Não se aplica";
+      $("ld-data").value = lead?.dataContato || todayISO();
+      $("ld-followup").value = lead?.proximoFollowup || "";
+      $("ld-obs").value = lead?.observacao || "";
+      $("lead-modal").classList.remove("hidden");
+    }
+
+    $("btn-new-lead").onclick = () => openModal();
+    $("btn-close-modal").onclick = () => $("lead-modal").classList.add("hidden");
+    $("btn-cancel-modal").onclick = () => $("lead-modal").classList.add("hidden");
+
+    $("lead-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const id = $("ld-id").value;
+      const payload = {
+        nome: $("ld-nome").value.trim(),
+        telefone: $("ld-tel").value.trim(),
+        email: $("ld-email").value.trim(),
+        profissao: $("ld-prof").value.trim(),
+        cidade: $("ld-cidade").value.trim(),
+        estado: $("ld-uf").value.trim().toUpperCase(),
+        canal: $("ld-canal").value,
+        status: $("ld-status").value,
+        plano: $("ld-plano").value,
+        motivoPerda: $("ld-perda").value,
+        dataContato: $("ld-data").value || todayISO(),
+        proximoFollowup: $("ld-followup").value,
+        observacao: $("ld-obs").value.trim(),
+        updatedAt: serverTimestamp()
+      };
+
+      try {
+        if (id) {
+          await updateDoc(doc(db, "crm_leads", id), payload);
+          showToast("Lead atualizado!");
+        } else {
+          await addDoc(collection(db, "crm_leads"), {
+            ...payload,
+            sdrUid: currentUser.uid,
+            sdrNome: currentProfile.nome || currentUser.email,
+            sdrCode: currentProfile.code || "SDR",
+            squadId: currentProfile.squadId || "SQUAD-01",
+            pixConfirmado: false,
+            createdAt: serverTimestamp()
+          });
+          showToast("Lead cadastrado!");
+        }
+        $("lead-modal").classList.add("hidden");
+      } catch (err) {
+        showToast("Erro ao salvar: " + err.message);
+      }
+    };
+
+    // Equipe (Diretoria)
+    $("btn-save-member").onclick = async () => {
+      const uid = $("tm-uid").value.trim();
+      const nome = $("tm-nome").value.trim();
+      if (!uid || !nome) return showToast("Informe UID e Nome.");
+      await setDoc(doc(db, "crm_users", uid), {
+        nome,
+        email: $("tm-email").value.trim(),
+        code: $("tm-code").value.trim() || "SDR",
+        role: $("tm-role").value,
+        squadId: $("tm-squad").value.trim() || "SQUAD-01",
+        ativo: true,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      $("tm-uid").value = ""; $("tm-nome").value = ""; $("tm-email").value = ""; $("tm-code").value = "";
+      showToast("Membro salvo na equipe!");
+    };
+
+    function renderTeam() {
+      $("team-tbody").innerHTML = allMembers.map((m) => `
+        <tr>
+          <td><strong>${m.code || "-"}</strong> • ${m.nome || "-"}</td>
+          <td>${m.email || "-"}<div class="sub-txt">${m.uid}</div></td>
+          <td><span class="badge b-gold">${m.role}</span></td>
+          <td>${m.squadId || "-"}</td>
+          <td><span class="badge ${m.ativo !== false ? "b-green" : "b-red"}">${m.ativo !== false ? "Ativo" : "Inativo"}</span></td>
+          <td>
+            <button class="btn btn-outline btn-sm" data-toggle="${m.uid}">${m.ativo !== false ? "Desativar" : "Ativar"}</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.querySelectorAll("[data-toggle]").forEach((b) => {
+        b.onclick = async () => {
+          const m = allMembers.find((x) => x.uid === b.dataset.toggle);
+          await updateDoc(doc(db, "crm_users", m.uid), { ativo: m.ativo === false });
+          showToast("Status alterado!");
+        };
+      });
+    }
+
+    // Exportar CSV para a Planilha da Diretoria
+    $("btn-export-csv").onclick = () => {
+      const headers = ["Data", "Squad", "SDR", "Nome", "Telefone", "Email", "Profissao", "Cidade", "UF", "Canal", "Status", "Plano", "PixConfirmado", "MotivoPerda", "Followup", "Observacao"];
+      const rows = allLeads.map((l) => [
+        l.dataContato, l.squadId, l.sdrNome, l.nome, l.telefone, l.email, l.profissao, l.cidade, l.estado, l.canal, l.status, l.plano, l.pixConfirmado ? "Sim" : "Não", l.motivoPerda, l.proximoFollowup, (l.observacao || "").replace(/[\r\n]+/g, " ")
+      ].map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
+      const blob = new Blob(["\uFEFF" + [headers.join(";"), ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `crm_agenda_magnus_${todayISO()}.csv`;
+      a.click();
+    };
+
+    // Navegação de Abas & Filtros
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.onclick = () => {
+        document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+        t.classList.add("active");
+        ["dashboard", "leads", "team"].forEach((id) => {
+          $("tab-" + id).classList.toggle("hidden", t.dataset.tab !== id);
+        });
+      };
+    });
+
+    ["filter-search", "filter-status", "filter-plan"].forEach((id) => {
+      $(id).addEventListener("input", renderLeads);
+      $(id).addEventListener("change", renderLeads);
+    });
+  </script>
+</body>
+</html>
