@@ -88,6 +88,7 @@
       cursor: pointer;
       transition: opacity 0.15s, transform 0.15s;
       text-decoration: none;
+      white-space: nowrap;
     }
     .btn:hover { opacity: 0.92; }
     .btn:active { transform: scale(0.98); }
@@ -220,7 +221,6 @@
     .podium-sales { font-size: 22px; font-weight: 900; color: var(--gold); }
     .podium-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-    /* Animação de Brilho quando bate bônus / sobe no ranking */
     @keyframes championGlow {
       0%, 100% {
         box-shadow: 0 0 18px rgba(245, 197, 66, 0.45), inset 0 0 12px rgba(245, 197, 66, 0.2);
@@ -235,9 +235,7 @@
       0% { background-position: -200% center; }
       100% { background-position: 200% center; }
     }
-    .celebrate-glow {
-      animation: championGlow 1.4s ease-in-out infinite;
-    }
+    .celebrate-glow { animation: championGlow 1.4s ease-in-out infinite; }
     .shine-name {
       background: linear-gradient(90deg, #f5c542 0%, #ffffff 45%, #22c55e 75%, #f5c542 100%);
       background-size: 200% auto;
@@ -278,7 +276,7 @@
     }
     .chart-box { position: relative; height: 280px; }
 
-    /* Toolbar, Bulk Bar & Table */
+    /* Toolbar, Bulk Bar, Alertas & Table */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
     .toolbar .input { flex: 1; min-width: 210px; }
     .toolbar select { width: auto; min-width: 160px; }
@@ -293,12 +291,39 @@
       border-radius: 12px;
       margin-bottom: 14px;
     }
+    .delete-requests-box {
+      background: rgba(239, 83, 80, 0.1);
+      border: 1px solid rgba(239, 83, 80, 0.45);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .delete-req-item {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(239, 83, 80, 0.2);
+    }
+    .delete-req-item:last-child { border-bottom: none; padding-bottom: 0; }
+
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
-    table { width: 100%; border-collapse: collapse; min-width: 1120px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1080px; }
     th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid #1d2842; font-size: 13px; vertical-align: top; }
     th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f1629; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,0.02); }
+    tr.row-del-pending td { background: rgba(239, 83, 80, 0.06); }
+    .link-truncate {
+      display: inline-block;
+      max-width: 210px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
 
     /* Badges & SLA Timer */
     .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
@@ -409,7 +434,6 @@
 
     <!-- ABA 1: DASHBOARD -->
     <section id="tab-dashboard">
-      <!-- ARENA DE COMPETITIVIDADE EM TEMPO REAL (VISÍVEL PARA TODOS OS NÍVEIS) -->
       <div class="arena-banner">
         <div class="arena-top">
           <div>
@@ -425,7 +449,6 @@
         <div class="podium-grid" id="podium-container"></div>
       </div>
 
-      <!-- KPIs DE ACORDO COM O NÍVEL (SDR = Individual | GESTOR = Squad | DIRETORIA = Empresa) -->
       <div class="kpis" id="kpi-container"></div>
 
       <div class="grid-2">
@@ -446,7 +469,6 @@
         </div>
       </div>
 
-      <!-- Tabela de Ranking Completo (visível para todos para estimular competitividade; comissões ocultas para colegas) -->
       <div id="squad-ranking-card" class="card">
         <div class="card-title">
           <span id="ranking-table-title">Placar Geral de Competitividade &amp; Chamadas (Tempo Real)</span>
@@ -478,12 +500,21 @@
     <!-- ABA 2: LEADS -->
     <section id="tab-leads" class="hidden">
       <div class="card">
-        <!-- BARRA DE DISTRIBUIÇÃO EM LOTE (GESTOR E DIRETORIA) -->
+        <!-- SOLICITAÇÕES DE EXCLUSÃO PENDENTES (APENAS DIRETORIA) -->
+        <div id="delete-requests-panel" class="delete-requests-box hidden">
+          <div style="font-size:14px; font-weight:800; color:var(--red); margin-bottom:8px;">
+            🚨 Solicitações de Exclusão de Leads Aguardando Diretoria (<span id="del-req-count">0</span>)
+          </div>
+          <div id="delete-requests-list"></div>
+        </div>
+
+        <!-- BARRA DE DISTRIBUIÇÃO E EXCLUSÃO EM LOTE (APENAS GESTOR E DIRETORIA) -->
         <div id="bulk-assign-bar" class="bulk-bar hidden">
-          <strong style="font-size:13px; color:var(--gold);">⚡ Distribuição de Leads (<span id="selected-count">0</span> selecionados):</strong>
+          <strong style="font-size:13px; color:var(--gold);">⚡ Ações em Lote (<span id="selected-count">0</span> selecionados):</strong>
           <select id="bulk-sdr-select" style="width:auto; min-width:230px;"></select>
           <button id="btn-bulk-assign" class="btn btn-gold btn-sm">Direcionar Selecionados</button>
           <button id="btn-assign-all-filtered" class="btn btn-outline btn-sm">Direcionar Todos Filtrados</button>
+          <button id="btn-bulk-delete" class="btn btn-red btn-sm hidden">🗑️ Excluir Selecionados (Diretoria)</button>
         </div>
 
         <div class="toolbar">
@@ -500,6 +531,7 @@
             <option>App Instalado / Teste</option>
             <option>Fechado - Ganho</option>
             <option>Perdido</option>
+            <option value="DEL_PENDING">⏳ Exclusão Solicitada</option>
           </select>
           <select id="filter-plan">
             <option value="ALL">Todos os Planos</option>
@@ -534,24 +566,24 @@
     <!-- ABA 3: EQUIPE (APENAS DIRETORIA) -->
     <section id="tab-team" class="hidden">
       <div class="card">
-        <div class="card-title">Cadastrar / Autorizar SDR ou Gestor</div>
+        <div class="card-title">Cadastrar / Autorizar Diretor, Gestor ou SDR</div>
         <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">
-          Crie o usuário em <strong>Firebase Authentication &gt; Users</strong>, copie o <strong>UID</strong> dele e cadastre aqui para liberar o acesso ao CRM.
+          Informe o <strong>UID do Firebase</strong> (se já tiver) <strong>ou apenas o E-mail</strong> da pessoa. Se cadastrar pelo e-mail, assim que ela fizer o primeiro login no CRM o nível de acesso (Diretor, Gestor ou SDR) será ativado automaticamente.
         </p>
-        <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
-          <div><label>UID do Firebase</label><input id="tm-uid" class="input" placeholder="Cole o UID aqui" /></div>
-          <div><label>Nome Completo</label><input id="tm-nome" class="input" placeholder="Ex.: João Silva" /></div>
-          <div><label>E-mail</label><input id="tm-email" class="input" placeholder="joao@email.com" /></div>
-          <div><label>Código</label><input id="tm-code" class="input" placeholder="Ex.: SDR-01 ou GESTOR-01" /></div>
+        <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));">
+          <div><label>Nome Completo *</label><input id="tm-nome" class="input" placeholder="Ex.: Magnus Dev" /></div>
+          <div><label>E-mail de Acesso *</label><input id="tm-email" class="input" type="email" placeholder="magnus.dev.2000@gmail.com" /></div>
+          <div><label>UID do Firebase (Opcional se pôr e-mail)</label><input id="tm-uid" class="input" placeholder="Cole o UID se já tiver" /></div>
+          <div><label>Código</label><input id="tm-code" class="input" placeholder="Ex.: DIR-02, GESTOR-01, SDR-01" /></div>
           <div>
-            <label>Perfil (Permissão)</label>
+            <label>Nível / Permissão *</label>
             <select id="tm-role">
-              <option value="SDR">SDR</option>
-              <option value="GESTOR">GESTOR</option>
-              <option value="ADMIN">ADMIN (Diretoria)</option>
+              <option value="ADMIN">DIRETOR (ADMIN Total)</option>
+              <option value="GESTOR">GESTOR (Squad)</option>
+              <option value="SDR">SDR (Vendedor)</option>
             </select>
           </div>
-          <div><label>Squad ID</label><input id="tm-squad" class="input" placeholder="Ex.: SQUAD-01" value="SQUAD-01" /></div>
+          <div><label>Squad ID</label><input id="tm-squad" class="input" placeholder="Ex.: TODOS ou SQUAD-01" value="SQUAD-01" /></div>
         </div>
         <div style="margin-top:14px;">
           <button id="btn-save-member" class="btn btn-gold">Salvar Membro na Equipe</button>
@@ -559,14 +591,14 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Membros Cadastrados</div>
+        <div class="card-title">Membros Cadastrados &amp; Pré-Autorizados (Todos os Níveis)</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Código / Nome</th>
                 <th>E-mail / UID</th>
-                <th>Perfil</th>
+                <th>Nível (Alterar Cargo)</th>
                 <th>Squad</th>
                 <th>Status</th>
                 <th>Ação</th>
@@ -677,7 +709,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, query, orderBy, onSnapshot, serverTimestamp, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, deleteField, query, orderBy, onSnapshot, serverTimestamp, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBDp8u-KbrKGXTHCNMKAtb_L9GOiSur31g",
@@ -689,7 +721,14 @@
       measurementId: "G-D797QZR31L"
     };
 
-    const ADMIN_UID = "xCWYveQCqXfqQoZOixN7levgXOm1";
+    // DIRETORIA MASTER (UID + E-MAILS AUTORIZADOS COMO DIRETOR)
+    const ADMIN_UIDS = new Set([
+      "xCWYveQCqXfqQoZOixN7levgXOm1"
+    ]);
+    const ADMIN_EMAILS = new Set([
+      "magnus.dev.2000@gmail.com",
+      "magnusdev.2000@gmail.com"
+    ]);
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -711,6 +750,18 @@
     const $ = (id) => document.getElementById(id);
     const fmtBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const todayISO = () => new Date().toISOString().slice(0, 10);
+    const normalizeRole = (r) => {
+      const val = String(r || "SDR").trim().toUpperCase();
+      if (val === "ADMIN" || val === "DIRETOR" || val === "DIRETORIA") return "ADMIN";
+      if (val === "GESTOR") return "GESTOR";
+      return "SDR";
+    };
+    const roleLabel = (r) => {
+      const norm = normalizeRole(r);
+      if (norm === "ADMIN") return "DIRETOR (ADMIN)";
+      if (norm === "GESTOR") return "GESTOR";
+      return "SDR";
+    };
 
     function showToast(msg) {
       const t = $("toast");
@@ -719,7 +770,6 @@
       setTimeout(() => t.classList.add("hidden"), 3200);
     }
 
-    // Fogos de artifício e destaque de premiação
     function launchFireworks(championName = null) {
       if (championName) {
         celebratedChampions.add(championName);
@@ -736,7 +786,6 @@
       }
     }
 
-    // Formata o contador de tempo desde a última ação (SLA que reseta a cada alteração)
     function getMillis(ts) {
       if (!ts) return Date.now();
       if (typeof ts.toMillis === "function") return ts.toMillis();
@@ -774,7 +823,6 @@
       });
     }
 
-    // Escada de Comissão (baseada apenas em vendas com PIX confirmado)
     function calcSdrCommission(proCount, essCount) {
       let comm = 0;
       if (proCount > 0) comm += Math.min(proCount, 22) * 17;
@@ -800,10 +848,10 @@
       return ov + bon;
     }
 
-    // Escopo de Leads visível por nível para gestão e chamadas
     function getScopedLeads() {
-      if (currentProfile.role === "ADMIN") return allCompanyLeads;
-      if (currentProfile.role === "GESTOR") {
+      const role = normalizeRole(currentProfile.role);
+      if (role === "ADMIN") return allCompanyLeads;
+      if (role === "GESTOR") {
         return allCompanyLeads.filter((l) => (l.squadId || "") === currentProfile.squadId);
       }
       return allCompanyLeads.filter((l) => l.sdrUid === currentUser.uid);
@@ -840,31 +888,65 @@
       }
 
       currentUser = user;
-      const memberSnap = await getDoc(doc(db, "crm_users", user.uid));
+      const emailLower = (user.email || "").trim().toLowerCase();
+      const memberRef = doc(db, "crm_users", user.uid);
+      const memberSnap = await getDoc(memberRef);
 
-      if (user.uid === ADMIN_UID) {
-        currentProfile = memberSnap.exists()
-          ? { ...memberSnap.data(), role: "ADMIN" }
-          : { nome: "Diretoria", email: user.email, code: "CEO", role: "ADMIN", squadId: "TODOS", ativo: true };
+      // Verifica se há pré-cadastro por e-mail (para novos Diretores/Gestores/SDRs cadastrados sem UID)
+      let inviteData = null;
+      if (emailLower) {
+        const inviteRef = doc(db, "crm_users", `email_${emailLower}`);
+        const inviteSnap = await getDoc(inviteRef);
+        if (inviteSnap.exists()) {
+          inviteData = inviteSnap.data();
+          await setDoc(memberRef, {
+            ...inviteData,
+            email: emailLower,
+            ativo: true,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          await deleteDoc(inviteRef);
+        }
+      }
+
+      const isMasterAdmin = ADMIN_UIDS.has(user.uid) || ADMIN_EMAILS.has(emailLower);
+
+      if (isMasterAdmin) {
+        const baseData = memberSnap.exists() ? memberSnap.data() : (inviteData || {});
+        currentProfile = {
+          nome: baseData.nome || user.displayName || "Diretoria",
+          email: emailLower,
+          code: baseData.code || "DIRETOR",
+          role: "ADMIN",
+          squadId: baseData.squadId || "TODOS",
+          ativo: true
+        };
+        await setDoc(memberRef, { ...currentProfile, updatedAt: serverTimestamp() }, { merge: true });
       } else if (memberSnap.exists() && memberSnap.data().ativo !== false) {
-        currentProfile = memberSnap.data();
+        const d = memberSnap.data();
+        currentProfile = { ...d, role: normalizeRole(d.role) };
+      } else if (inviteData && inviteData.ativo !== false) {
+        currentProfile = { ...inviteData, role: normalizeRole(inviteData.role) };
       } else {
-        $("login-error").textContent = "Acesso não autorizado. Peça à gestão para cadastrar seu UID no CRM.";
+        $("login-error").textContent = "Acesso não autorizado. Peça à Diretoria para cadastrar seu e-mail ou UID no CRM.";
         await signOut(auth);
         return;
       }
 
-      $("login-view").classList.add("hidden");
-      $("app-view").classList.remove("hidden");
-      $("role-pill").textContent = `${currentProfile.role} • ${currentProfile.squadId || "GERAL"}`;
-      $("user-subtitle").textContent = `${currentProfile.nome} (${currentProfile.code || currentUser.email}) • Tempo real`;
-
-      const isAdmin = currentProfile.role === "ADMIN";
-      const isGestor = currentProfile.role === "GESTOR";
+      const role = normalizeRole(currentProfile.role);
+      const isAdmin = role === "ADMIN";
+      const isGestor = role === "GESTOR";
       const canManage = isAdmin || isGestor;
 
+      $("login-view").classList.add("hidden");
+      $("app-view").classList.remove("hidden");
+      $("role-pill").textContent = `${roleLabel(role)} • ${currentProfile.squadId || "GERAL"}`;
+      $("user-subtitle").textContent = `${currentProfile.nome} (${currentProfile.code || currentUser.email}) • Tempo real`;
+
+      // Controles restritos estritamente por nível (SDR não vê nenhum desses)
       $("tab-btn-team").classList.toggle("hidden", !isAdmin);
       $("btn-export-csv").classList.toggle("hidden", !isAdmin);
+      $("btn-bulk-delete").classList.toggle("hidden", !isAdmin);
       $("btn-test-fireworks").classList.toggle("hidden", !canManage);
       $("bulk-assign-bar").classList.toggle("hidden", !canManage);
       $("th-select-all").classList.toggle("hidden", !canManage);
@@ -876,8 +958,6 @@
     });
 
     function startListeners() {
-      // Escuta toda a coleção para alimentar a Arena de Competitividade em tempo real;
-      // a tabela de leads e os KPIs operacionais filtram pelo nível (SDR, GESTOR, ADMIN).
       const qLeads = query(collection(db, "crm_leads"), orderBy("updatedAt", "desc"));
       unsubLeads = onSnapshot(qLeads, (snap) => {
         allCompanyLeads = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -894,15 +974,20 @@
         $("tab-leads-count").textContent = scoped.length;
         renderArenaAndPodium();
         renderDashboard();
+        renderDeleteRequestsBanner();
         renderLeads();
       }, (err) => {
         showToast("Erro ao sincronizar leads: " + err.message);
       });
 
       unsubTeam = onSnapshot(collection(db, "crm_users"), (snap) => {
-        allMembers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+        allMembers = snap.docs.map((d) => ({
+          uid: d.id,
+          ...d.data(),
+          role: normalizeRole(d.data().role)
+        }));
         populateSdrSelectors();
-        if (currentProfile.role === "ADMIN") renderTeam();
+        if (normalizeRole(currentProfile.role) === "ADMIN") renderTeam();
         renderArenaAndPodium();
         renderDashboard();
         renderLeads();
@@ -910,9 +995,10 @@
     }
 
     function getAssignableMembers() {
-      const active = allMembers.filter((m) => m.ativo !== false);
-      if (currentProfile.role === "ADMIN") return active;
-      if (currentProfile.role === "GESTOR") {
+      const role = normalizeRole(currentProfile.role);
+      const active = allMembers.filter((m) => m.ativo !== false && !m.uid.startsWith("email_"));
+      if (role === "ADMIN") return active;
+      if (role === "GESTOR") {
         return active.filter((m) => (m.squadId || "") === currentProfile.squadId);
       }
       return [];
@@ -927,10 +1013,9 @@
       $("filter-sdr").innerHTML = `<option value="ALL">Todos os SDRs</option>${opts}`;
     }
 
-    // Agrega placar geral da empresa baseado nas vendas com PIX confirmado
     function buildLeaderboardStats() {
       const map = {};
-      allMembers.filter((m) => m.ativo !== false && m.role === "SDR").forEach((m) => {
+      allMembers.filter((m) => m.ativo !== false && m.role === "SDR" && !m.uid.startsWith("email_")).forEach((m) => {
         map[m.uid] = {
           uid: m.uid,
           nome: m.nome,
@@ -988,7 +1073,6 @@
       return { label: `Faltam ${22 - proOk} PRO p/ Faixa 2`, hit: false };
     }
 
-    // Arena de Competitividade + Pódio 1º, 2º, 3º ao vivo
     function renderArenaAndPodium() {
       const ranking = buildLeaderboardStats();
       const totalProEmpresa = ranking.reduce((s, x) => s + x.proOk, 0);
@@ -1001,15 +1085,14 @@
         <div><small style="color:var(--muted); font-size:10px; display:block;">FATURAMENTO PIX VALIDADO</small><strong style="color:var(--green); font-size:18px;">${fmtBRL(fatConfirmadoEmpresa)}</strong></div>
       `;
 
-      // Ordem visual do pódio: 2º à esquerda, 1º no centro (maior), 3º à direita
       const p1 = ranking[0] || { nome: "Aguardando 1º", code: "-", proOk: 0, essOk: 0, calls: 0 };
       const p2 = ranking[1] || { nome: "Aguardando 2º", code: "-", proOk: 0, essOk: 0, calls: 0 };
       const p3 = ranking[2] || { nome: "Aguardando 3º", code: "-", proOk: 0, essOk: 0, calls: 0 };
 
       const podiumOrder = [
-        { pos: 2, medal: "🥈 2º LUGAR", cls: "rank-2", item: p2 },
-        { pos: 1, medal: "🥇 1º LUGAR", cls: "rank-1", item: p1 },
-        { pos: 3, medal: "🥉 3º LUGAR", cls: "rank-3", item: p3 }
+        { medal: "🥈 2º LUGAR", cls: "rank-2", item: p2 },
+        { medal: "🥇 1º LUGAR", cls: "rank-1", item: p1 },
+        { medal: "🥉 3º LUGAR", cls: "rank-3", item: p3 }
       ];
 
       $("podium-container").innerHTML = podiumOrder.map(({ medal, cls, item }) => {
@@ -1027,12 +1110,12 @@
       }).join("");
     }
 
-    // Render Dashboard por Nível (SDR vs GESTOR vs DIRETORIA)
     function renderDashboard() {
       const scopedLeads = getScopedLeads();
       const today = todayISO();
-      const isSDR = currentProfile.role === "SDR";
-      const isGestor = currentProfile.role === "GESTOR";
+      const role = normalizeRole(currentProfile.role);
+      const isSDR = role === "SDR";
+      const isGestor = role === "GESTOR";
 
       const total = scopedLeads.length;
       const totalCalls = scopedLeads.reduce((s, l) => s + Number(l.callCount || 0), 0);
@@ -1073,7 +1156,6 @@
         </div>
       `).join("");
 
-      // Gráfico 1: Funil do Escopo
       const statuses = ["Novo Lead", "Tentativa de Contato", "Em Conversa", "Vídeo/Demo Enviado", "App Instalado / Teste", "Fechado - Ganho", "Perdido"];
       const statusCounts = statuses.map((s) => scopedLeads.filter((l) => l.status === s).length);
 
@@ -1100,7 +1182,6 @@
         }
       });
 
-      // Gráfico 2 e Tabela Geral de Competitividade (visíveis para todos)
       const ranking = buildLeaderboardStats();
       if (chartSecondary) chartSecondary.destroy();
       chartSecondary = new Chart($("chart-secondary"), {
@@ -1149,17 +1230,83 @@
       }).join("") : `<tr><td colspan="11" style="text-align:center;color:var(--muted);">Nenhuma movimentação registrada ainda.</td></tr>`;
     }
 
-    // Render Tabela de Leads
+    function renderDeleteRequestsBanner() {
+      const panel = $("delete-requests-panel");
+      if (normalizeRole(currentProfile.role) !== "ADMIN") {
+        panel.classList.add("hidden");
+        return;
+      }
+      const pending = allCompanyLeads.filter((l) => l.deleteRequestStatus === "PENDING");
+      if (!pending.length) {
+        panel.classList.add("hidden");
+        return;
+      }
+      panel.classList.remove("hidden");
+      $("del-req-count").textContent = pending.length;
+      $("delete-requests-list").innerHTML = pending.map((l) => `
+        <div class="delete-req-item">
+          <div>
+            <strong>${l.nome || "Sem nome"}</strong> <span class="sub-txt">(${l.telefone || "-"} • SDR: ${l.sdrNome || "-"} • ${l.squadId || "-"})</span>
+            <div class="sub-txt" style="color:#fca5a5;">
+              Solicitado por <strong>${l.deleteRequestedBy || "Gestor"}</strong> • Motivo: "${l.deleteRequestReason || "Não informado"}"
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-red btn-sm" data-approve-del="${l.id}">✅ Aprovar e Apagar</button>
+            <button class="btn btn-outline btn-sm" data-reject-del="${l.id}">❌ Recusar Pedido</button>
+          </div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll("[data-approve-del]").forEach((b) => {
+        b.onclick = () => approveOrDeleteLead(b.dataset.approveDel, true);
+      });
+      document.querySelectorAll("[data-reject-del]").forEach((b) => {
+        b.onclick = () => rejectDeleteRequest(b.dataset.rejectDel);
+      });
+    }
+
+    async function approveOrDeleteLead(leadId, isApproval = false) {
+      const lead = allCompanyLeads.find((x) => x.id === leadId);
+      const msg = isApproval
+        ? `Aprovar pedido do Gestor e APAGAR permanentemente o lead "${lead?.nome || ""}"?`
+        : `Tem certeza que deseja APAGAR permanentemente o lead "${lead?.nome || ""}"? Essa ação não pode ser desfeita.`;
+      if (!confirm(msg)) return;
+      await deleteDoc(doc(db, "crm_leads", leadId));
+      selectedLeadIds.delete(leadId);
+      showToast("🗑️ Lead apagado permanentemente pela Diretoria!");
+    }
+
+    async function rejectDeleteRequest(leadId) {
+      await updateDoc(doc(db, "crm_leads", leadId), {
+        deleteRequestStatus: deleteField(),
+        deleteRequestReason: deleteField(),
+        deleteRequestedBy: deleteField(),
+        deleteRequestedAt: deleteField(),
+        updatedAt: serverTimestamp()
+      });
+      showToast("❌ Pedido de exclusão recusado. Lead mantido no CRM.");
+    }
+
+    // Render Tabela de Leads (SDR NÃO tem checkboxes, NÃO move leads, NÃO valida PIX e NÃO apaga)
     function renderLeads() {
       const scopedLeads = getScopedLeads();
       const term = $("filter-search").value.toLowerCase().trim();
       const st = $("filter-status").value;
       const pl = $("filter-plan").value;
       const sdrFilter = $("filter-sdr").value;
-      const canManage = currentProfile.role === "ADMIN" || currentProfile.role === "GESTOR";
+
+      const role = normalizeRole(currentProfile.role);
+      const isAdmin = role === "ADMIN";
+      const isGestor = role === "GESTOR";
+      const canManage = isAdmin || isGestor;
 
       const filtered = scopedLeads.filter((l) => {
-        if (st !== "ALL" && l.status !== st) return false;
+        if (st === "DEL_PENDING") {
+          if (l.deleteRequestStatus !== "PENDING") return false;
+        } else if (st !== "ALL" && l.status !== st) {
+          return false;
+        }
         if (pl !== "ALL" && l.plano !== pl) return false;
         if (canManage && sdrFilter !== "ALL" && l.sdrUid !== sdrFilter) return false;
         if (!term) return true;
@@ -1177,6 +1324,11 @@
           ? (l.pixConfirmado ? `<span class="badge b-green">PIX VALIDADO</span>` : `<span class="badge b-red">Aguardando PIX</span>`)
           : "";
 
+        const hasDelPending = l.deleteRequestStatus === "PENDING";
+        const delPendingBadge = hasDelPending
+          ? `<div style="margin-top:4px;"><span class="badge b-red">⏳ Exclusão Solicitada</span><div class="sub-txt" style="color:#fca5a5;">Por ${l.deleteRequestedBy || "Gestor"}: ${l.deleteRequestReason || "-"}</div></div>`
+          : "";
+
         const slaMs = getMillis(l.lastActivityAt || l.updatedAt || l.createdAt);
         const safeLink = l.linkOrigem && /^https?:\/\//i.test(l.linkOrigem) ? l.linkOrigem : "";
         const calls = Number(l.callCount || 0);
@@ -1188,8 +1340,20 @@
           </select>
         ` : "";
 
+        let deleteActionHtml = "";
+        if (isAdmin) {
+          deleteActionHtml = hasDelPending
+            ? `<button class="btn btn-red btn-sm" data-del-direct="${l.id}">✅ Aprovar Exclusão</button>
+               <button class="btn btn-outline btn-sm" data-del-reject="${l.id}">❌ Recusar</button>`
+            : `<button class="btn btn-red btn-sm" data-del-direct="${l.id}">🗑️ Excluir</button>`;
+        } else if (isGestor) {
+          deleteActionHtml = hasDelPending
+            ? `<span class="badge b-muted" style="align-self:center;">Aguardando Diretoria</span>`
+            : `<button class="btn btn-red btn-sm" data-del-req="${l.id}">🗑️ Solicitar Exclusão</button>`;
+        }
+
         return `
-          <tr>
+          <tr class="${hasDelPending ? "row-del-pending" : ""}">
             ${canManage ? `<td><input type="checkbox" class="lead-chk" data-id="${l.id}" ${selectedLeadIds.has(l.id) ? "checked" : ""} /></td>` : ""}
             <td>
               <strong>${l.dataContato || "-"}</strong>
@@ -1201,7 +1365,7 @@
             <td>
               <strong>${l.nome || "-"}</strong>
               <div class="sub-txt">${l.profissao || "-"} • <span class="badge b-muted">${l.canal || "-"}</span></div>
-              ${safeLink ? `<div style="margin-top:4px;"><a href="${safeLink}" target="_blank" rel="noopener" class="btn btn-blue btn-sm">🔗 Abrir Link Origem</a></div>` : (l.linkOrigem ? `<div class="sub-txt">${l.linkOrigem}</div>` : "")}
+              ${safeLink ? `<div style="margin-top:4px;"><a href="${safeLink}" target="_blank" rel="noopener" class="btn btn-blue btn-sm">🔗 Abrir Link Origem</a></div>` : (l.linkOrigem ? `<div class="sub-txt link-truncate" title="${l.linkOrigem}">${l.linkOrigem}</div>` : "")}
             </td>
             <td>
               <div>${l.telefone || "-"}</div>
@@ -1217,6 +1381,7 @@
             <td>
               <span class="badge ${stCls}">${l.status || "-"}</span>
               <div class="sub-txt">${l.plano || "Não Fechou"}</div>
+              ${delPendingBadge}
             </td>
             <td style="max-width:220px;">
               ${l.motivoPerda && l.motivoPerda !== "Não se aplica" ? `<div style="color:var(--red); font-size:12px; font-weight:600;">${l.motivoPerda}</div>` : ""}
@@ -1233,6 +1398,7 @@
                 <button class="btn btn-outline btn-sm" data-edit="${l.id}">Editar</button>
                 ${waDigits ? `<a class="btn btn-green btn-sm" href="${waLink}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
                 ${canManage && l.status === "Fechado - Ganho" ? `<button class="btn btn-gold btn-sm" data-pix="${l.id}">${l.pixConfirmado ? "Desmarcar PIX" : "✅ Validar PIX"}</button>` : ""}
+                ${deleteActionHtml}
               </div>
             </td>
           </tr>
@@ -1241,14 +1407,55 @@
 
       updateSelectionUI();
 
-      // Eventos da tabela
-      document.querySelectorAll(".lead-chk").forEach((chk) => {
-        chk.onchange = () => {
-          if (chk.checked) selectedLeadIds.add(chk.dataset.id);
-          else selectedLeadIds.delete(chk.dataset.id);
-          updateSelectionUI();
-        };
-      });
+      if (canManage) {
+        document.querySelectorAll(".lead-chk").forEach((chk) => {
+          chk.onchange = () => {
+            if (chk.checked) selectedLeadIds.add(chk.dataset.id);
+            else selectedLeadIds.delete(chk.dataset.id);
+            updateSelectionUI();
+          };
+        });
+
+        document.querySelectorAll("[data-reassign]").forEach((sel) => {
+          sel.onchange = async () => {
+            const targetUid = sel.value;
+            if (!targetUid) return;
+            const target = allMembers.find((m) => m.uid === targetUid);
+            if (!target) return;
+            await updateDoc(doc(db, "crm_leads", sel.dataset.reassign), {
+              sdrUid: target.uid,
+              sdrNome: target.nome,
+              sdrCode: target.code || "SDR",
+              squadId: target.squadId || currentProfile.squadId || "SQUAD-01",
+              lastActivityAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            showToast(`Lead transferido para ${target.nome} (contador zerado)!`);
+          };
+        });
+
+        document.querySelectorAll("[data-pix]").forEach((b) => {
+          b.onclick = async () => {
+            const lead = allCompanyLeads.find((x) => x.id === b.dataset.pix);
+            const nextState = !lead.pixConfirmado;
+            let ref = lead.pixComprovanteRef || "";
+            if (nextState) {
+              const inputRef = prompt("Informe o ID ou referência do comprovante PIX (opcional):", ref);
+              if (inputRef === null) return;
+              ref = inputRef.trim();
+            }
+            await updateDoc(doc(db, "crm_leads", lead.id), {
+              pixConfirmado: nextState,
+              pixComprovanteRef: ref,
+              pixValidatedBy: currentProfile.nome,
+              lastActivityAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            if (nextState) launchFireworks(lead.sdrNome || lead.sdrCode || "Equipe");
+            else showToast("Validação PIX removida.");
+          };
+        });
+      }
 
       document.querySelectorAll("[data-add-call]").forEach((b) => {
         b.onclick = async () => {
@@ -1261,49 +1468,37 @@
         };
       });
 
-      document.querySelectorAll("[data-reassign]").forEach((sel) => {
-        sel.onchange = async () => {
-          const targetUid = sel.value;
-          if (!targetUid) return;
-          const target = allMembers.find((m) => m.uid === targetUid);
-          if (!target) return;
-          await updateDoc(doc(db, "crm_leads", sel.dataset.reassign), {
-            sdrUid: target.uid,
-            sdrNome: target.nome,
-            sdrCode: target.code || "SDR",
-            squadId: target.squadId || currentProfile.squadId || "SQUAD-01",
-            lastActivityAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-          showToast(`Lead transferido para ${target.nome} (contador zerado)!`);
-        };
-      });
-
       document.querySelectorAll("[data-edit]").forEach((b) => {
         b.onclick = () => openModal(allCompanyLeads.find((x) => x.id === b.dataset.edit));
       });
 
-      document.querySelectorAll("[data-pix]").forEach((b) => {
-        b.onclick = async () => {
-          const lead = allCompanyLeads.find((x) => x.id === b.dataset.pix);
-          const nextState = !lead.pixConfirmado;
-          let ref = lead.pixComprovanteRef || "";
-          if (nextState) {
-            const inputRef = prompt("Informe o ID ou referência do comprovante PIX (opcional):", ref);
-            if (inputRef === null) return;
-            ref = inputRef.trim();
-          }
-          await updateDoc(doc(db, "crm_leads", lead.id), {
-            pixConfirmado: nextState,
-            pixComprovanteRef: ref,
-            pixValidatedBy: currentProfile.nome,
-            lastActivityAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-          if (nextState) launchFireworks(lead.sdrNome || lead.sdrCode || "Equipe");
-          else showToast("Validação PIX removida.");
-        };
-      });
+      if (isAdmin) {
+        document.querySelectorAll("[data-del-direct]").forEach((b) => {
+          b.onclick = () => approveOrDeleteLead(b.dataset.delDirect, false);
+        });
+        document.querySelectorAll("[data-del-reject]").forEach((b) => {
+          b.onclick = () => rejectDeleteRequest(b.dataset.delReject);
+        });
+      }
+
+      if (isGestor) {
+        document.querySelectorAll("[data-del-req]").forEach((b) => {
+          b.onclick = async () => {
+            const lead = allCompanyLeads.find((x) => x.id === b.dataset.delReq);
+            const reason = prompt(`Informe o motivo para solicitar à Diretoria a exclusão de "${lead?.nome || ""}":`);
+            if (reason === null) return;
+            if (!reason.trim()) return showToast("Informe um motivo válido para enviar o pedido.");
+            await updateDoc(doc(db, "crm_leads", lead.id), {
+              deleteRequestStatus: "PENDING",
+              deleteRequestReason: reason.trim(),
+              deleteRequestedBy: currentProfile.nome || currentUser.email,
+              deleteRequestedAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            showToast("📩 Pedido de exclusão enviado para a Diretoria!");
+          };
+        });
+      }
     }
 
     function updateSelectionUI() {
@@ -1320,6 +1515,8 @@
     };
 
     async function assignLeadBatch(ids, targetUid) {
+      const role = normalizeRole(currentProfile.role);
+      if (role !== "ADMIN" && role !== "GESTOR") return;
       if (!targetUid) return showToast("Selecione o SDR de destino primeiro.");
       if (!ids.length) return showToast("Selecione pelo menos 1 lead.");
       const target = allMembers.find((m) => m.uid === targetUid);
@@ -1346,6 +1543,19 @@
     $("btn-assign-all-filtered").onclick = () => {
       const visibleIds = [...document.querySelectorAll(".lead-chk")].map((c) => c.dataset.id);
       assignLeadBatch(visibleIds, $("bulk-sdr-select").value);
+    };
+
+    $("btn-bulk-delete").onclick = async () => {
+      if (normalizeRole(currentProfile.role) !== "ADMIN") return;
+      const ids = [...selectedLeadIds];
+      if (!ids.length) return showToast("Selecione pelo menos 1 lead para excluir.");
+      if (!confirm(`DIRETORIA: Deseja apagar permanentemente ${ids.length} lead(s) selecionado(s)?`)) return;
+      const batch = writeBatch(db);
+      ids.forEach((id) => batch.delete(doc(db, "crm_leads", id)));
+      await batch.commit();
+      selectedLeadIds.clear();
+      $("chk-select-all").checked = false;
+      showToast(`🗑️ ${ids.length} lead(s) apagado(s) pela Diretoria!`);
     };
 
     // Modal Lead
@@ -1379,7 +1589,8 @@
     $("lead-form").onsubmit = async (e) => {
       e.preventDefault();
       const id = $("ld-id").value;
-      const canManage = currentProfile.role === "ADMIN" || currentProfile.role === "GESTOR";
+      const role = normalizeRole(currentProfile.role);
+      const canManage = role === "ADMIN" || role === "GESTOR";
       const chosenUid = canManage && $("ld-sdr").value ? $("ld-sdr").value : currentUser.uid;
       const chosenMember = allMembers.find((m) => m.uid === chosenUid) || currentProfile;
 
@@ -1429,43 +1640,90 @@
       }
     };
 
-    // Equipe (Diretoria)
+    // Equipe & Acessos (Diretoria — suporta UID ou E-mail e todos os níveis: DIRETOR, GESTOR, SDR)
     $("btn-save-member").onclick = async () => {
+      if (normalizeRole(currentProfile.role) !== "ADMIN") return;
       const uid = $("tm-uid").value.trim();
       const nome = $("tm-nome").value.trim();
-      if (!uid || !nome) return showToast("Informe UID e Nome.");
-      await setDoc(doc(db, "crm_users", uid), {
+      const email = $("tm-email").value.trim().toLowerCase();
+      const chosenRole = normalizeRole($("tm-role").value);
+
+      if (!nome) return showToast("Informe o Nome Completo.");
+      if (!uid && !email) return showToast("Informe o UID do Firebase ou o E-mail de acesso.");
+
+      // Se já existir membro com esse e-mail cadastrado por UID, atualiza o registro real
+      const existingByEmail = email ? allMembers.find((m) => (m.email || "").toLowerCase() === email && !m.uid.startsWith("email_")) : null;
+      const docId = uid || (existingByEmail ? existingByEmail.uid : `email_${email}`);
+
+      await setDoc(doc(db, "crm_users", docId), {
         nome,
-        email: $("tm-email").value.trim(),
-        code: $("tm-code").value.trim() || "SDR",
-        role: $("tm-role").value,
-        squadId: $("tm-squad").value.trim() || "SQUAD-01",
+        email,
+        code: $("tm-code").value.trim() || (chosenRole === "ADMIN" ? "DIRETOR" : chosenRole),
+        role: chosenRole,
+        squadId: $("tm-squad").value.trim() || (chosenRole === "ADMIN" ? "TODOS" : "SQUAD-01"),
         ativo: true,
         updatedAt: serverTimestamp()
       }, { merge: true });
+
       $("tm-uid").value = ""; $("tm-nome").value = ""; $("tm-email").value = ""; $("tm-code").value = "";
-      showToast("Membro salvo na equipe!");
+      showToast(`✅ ${nome} salvo como ${roleLabel(chosenRole)}!`);
     };
 
     function renderTeam() {
-      $("team-tbody").innerHTML = allMembers.map((m) => `
-        <tr>
-          <td><strong>${m.code || "-"}</strong> • ${m.nome || "-"}</td>
-          <td>${m.email || "-"}<div class="sub-txt">${m.uid}</div></td>
-          <td><span class="badge b-gold">${m.role}</span></td>
-          <td>${m.squadId || "-"}</td>
-          <td><span class="badge ${m.ativo !== false ? "b-green" : "b-red"}">${m.ativo !== false ? "Ativo" : "Inativo"}</span></td>
-          <td>
-            <button class="btn btn-outline btn-sm" data-toggle="${m.uid}">${m.ativo !== false ? "Desativar" : "Ativar"}</button>
-          </td>
-        </tr>
-      `).join("");
+      $("team-tbody").innerHTML = allMembers.map((m) => {
+        const isPendingLogin = m.uid.startsWith("email_");
+        const r = normalizeRole(m.role);
+        return `
+          <tr>
+            <td><strong>${m.code || "-"}</strong> • ${m.nome || "-"}</td>
+            <td>
+              ${m.email || "-"}
+              <div class="sub-txt">${isPendingLogin ? "⏳ Aguardando 1º login para vincular UID" : m.uid}</div>
+            </td>
+            <td>
+              <select class="input" style="padding:5px 8px; font-size:12px; min-width:165px;" data-change-role="${m.uid}">
+                <option value="ADMIN" ${r === "ADMIN" ? "selected" : ""}>DIRETOR (ADMIN)</option>
+                <option value="GESTOR" ${r === "GESTOR" ? "selected" : ""}>GESTOR</option>
+                <option value="SDR" ${r === "SDR" ? "selected" : ""}>SDR</option>
+              </select>
+            </td>
+            <td>${m.squadId || "-"}</td>
+            <td><span class="badge ${m.ativo !== false ? "b-green" : "b-red"}">${m.ativo !== false ? "Ativo" : "Inativo"}</span></td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-outline btn-sm" data-toggle="${m.uid}">${m.ativo !== false ? "Desativar" : "Ativar"}</button>
+                <button class="btn btn-red btn-sm" data-del-member="${m.uid}">Remover</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      document.querySelectorAll("[data-change-role]").forEach((sel) => {
+        sel.onchange = async () => {
+          const newRole = normalizeRole(sel.value);
+          await updateDoc(doc(db, "crm_users", sel.dataset.changeRole), {
+            role: newRole,
+            updatedAt: serverTimestamp()
+          });
+          showToast(`Nível atualizado para ${roleLabel(newRole)}!`);
+        };
+      });
 
       document.querySelectorAll("[data-toggle]").forEach((b) => {
         b.onclick = async () => {
           const m = allMembers.find((x) => x.uid === b.dataset.toggle);
           await updateDoc(doc(db, "crm_users", m.uid), { ativo: m.ativo === false });
           showToast("Status alterado!");
+        };
+      });
+
+      document.querySelectorAll("[data-del-member]").forEach((b) => {
+        b.onclick = async () => {
+          const m = allMembers.find((x) => x.uid === b.dataset.delMember);
+          if (!confirm(`Remover acesso de "${m?.nome || ""}" do CRM?`)) return;
+          await deleteDoc(doc(db, "crm_users", m.uid));
+          showToast("Membro removido da equipe.");
         };
       });
     }
