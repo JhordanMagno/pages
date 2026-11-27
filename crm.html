@@ -518,7 +518,7 @@
         </div>
 
         <div class="toolbar">
-          <input id="filter-search" class="input" placeholder="Buscar por nome, telefone, cidade, link, profissão ou SDR..." />
+          <input id="filter-search" class="input" placeholder="Buscar por nome, telefone, bairro, cidade, link, profissão ou SDR..." />
           <select id="filter-sdr" class="hidden">
             <option value="ALL">Todos os SDRs</option>
           </select>
@@ -625,6 +625,7 @@
           <div><label>Telefone / WhatsApp *</label><input id="ld-tel" class="input" placeholder="(47) 99999-9999" required /></div>
           <div><label>E-mail</label><input id="ld-email" class="input" type="email" /></div>
           <div><label>Profissão / Ramo *</label><input id="ld-prof" class="input" placeholder="Ex.: Barbeiro, Revendedora, MEI" required /></div>
+          <div><label>Bairro</label><input id="ld-bairro" class="input" placeholder="Ex.: Centro, América, Boa Vista" /></div>
           <div><label>Cidade</label><input id="ld-cidade" class="input" /></div>
           <div><label>Estado (UF)</label><input id="ld-uf" class="input" maxlength="2" placeholder="SC" /></div>
           <div>
@@ -639,7 +640,7 @@
               <option>Presencial</option>
             </select>
           </div>
-          <div>
+          <div class="form-full">
             <label>Link do Lead (Instagram, OLX, Facebook...)</label>
             <input id="ld-link" class="input" type="url" placeholder="https://instagram.com/... ou link do anúncio" />
           </div>
@@ -892,7 +893,6 @@
       const memberRef = doc(db, "crm_users", user.uid);
       const memberSnap = await getDoc(memberRef);
 
-      // Verifica se há pré-cadastro por e-mail (para novos Diretores/Gestores/SDRs cadastrados sem UID)
       let inviteData = null;
       if (emailLower) {
         const inviteRef = doc(db, "crm_users", `email_${emailLower}`);
@@ -943,7 +943,6 @@
       $("role-pill").textContent = `${roleLabel(role)} • ${currentProfile.squadId || "GERAL"}`;
       $("user-subtitle").textContent = `${currentProfile.nome} (${currentProfile.code || currentUser.email}) • Tempo real`;
 
-      // Controles restritos estritamente por nível (SDR não vê nenhum desses)
       $("tab-btn-team").classList.toggle("hidden", !isAdmin);
       $("btn-export-csv").classList.toggle("hidden", !isAdmin);
       $("btn-bulk-delete").classList.toggle("hidden", !isAdmin);
@@ -1288,7 +1287,7 @@
       showToast("❌ Pedido de exclusão recusado. Lead mantido no CRM.");
     }
 
-    // Render Tabela de Leads (SDR NÃO tem checkboxes, NÃO move leads, NÃO valida PIX e NÃO apaga)
+    // Render Tabela de Leads
     function renderLeads() {
       const scopedLeads = getScopedLeads();
       const term = $("filter-search").value.toLowerCase().trim();
@@ -1310,7 +1309,7 @@
         if (pl !== "ALL" && l.plano !== pl) return false;
         if (canManage && sdrFilter !== "ALL" && l.sdrUid !== sdrFilter) return false;
         if (!term) return true;
-        return [l.nome, l.telefone, l.email, l.profissao, l.cidade, l.estado, l.sdrNome, l.linkOrigem, l.canal, l.observacao]
+        return [l.nome, l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.sdrNome, l.linkOrigem, l.canal, l.observacao]
           .filter(Boolean).join(" ").toLowerCase().includes(term);
       });
 
@@ -1332,6 +1331,8 @@
         const slaMs = getMillis(l.lastActivityAt || l.updatedAt || l.createdAt);
         const safeLink = l.linkOrigem && /^https?:\/\//i.test(l.linkOrigem) ? l.linkOrigem : "";
         const calls = Number(l.callCount || 0);
+        const cityUf = [l.cidade, l.estado].filter(Boolean).join(" / ");
+        const localStr = [l.bairro, cityUf].filter(Boolean).join(" • ");
 
         const transferSelect = canManage ? `
           <select class="input" style="padding:4px 6px; font-size:11px; margin-top:5px;" data-reassign="${l.id}">
@@ -1370,7 +1371,7 @@
             <td>
               <div>${l.telefone || "-"}</div>
               <div class="sub-txt">${l.email || ""}</div>
-              <div class="sub-txt">${[l.cidade, l.estado].filter(Boolean).join(" / ")}</div>
+              <div class="sub-txt">${localStr}</div>
             </td>
             <td>
               <span class="badge b-purple" style="font-size:12px;">📞 ${calls}</span>
@@ -1566,6 +1567,7 @@
       $("ld-tel").value = lead?.telefone || "";
       $("ld-email").value = lead?.email || "";
       $("ld-prof").value = lead?.profissao || "";
+      $("ld-bairro").value = lead?.bairro || "";
       $("ld-cidade").value = lead?.cidade || "";
       $("ld-uf").value = lead?.estado || "";
       $("ld-canal").value = lead?.canal || "Instagram";
@@ -1599,6 +1601,7 @@
         telefone: $("ld-tel").value.trim(),
         email: $("ld-email").value.trim(),
         profissao: $("ld-prof").value.trim(),
+        bairro: $("ld-bairro").value.trim(),
         cidade: $("ld-cidade").value.trim(),
         estado: $("ld-uf").value.trim().toUpperCase(),
         canal: $("ld-canal").value,
@@ -1640,7 +1643,7 @@
       }
     };
 
-    // Equipe & Acessos (Diretoria — suporta UID ou E-mail e todos os níveis: DIRETOR, GESTOR, SDR)
+    // Equipe & Acessos
     $("btn-save-member").onclick = async () => {
       if (normalizeRole(currentProfile.role) !== "ADMIN") return;
       const uid = $("tm-uid").value.trim();
@@ -1651,7 +1654,6 @@
       if (!nome) return showToast("Informe o Nome Completo.");
       if (!uid && !email) return showToast("Informe o UID do Firebase ou o E-mail de acesso.");
 
-      // Se já existir membro com esse e-mail cadastrado por UID, atualiza o registro real
       const existingByEmail = email ? allMembers.find((m) => (m.email || "").toLowerCase() === email && !m.uid.startsWith("email_")) : null;
       const docId = uid || (existingByEmail ? existingByEmail.uid : `email_${email}`);
 
@@ -1730,9 +1732,9 @@
 
     // Exportar CSV para a Planilha da Diretoria
     $("btn-export-csv").onclick = () => {
-      const headers = ["Data", "Squad", "SDR", "Nome", "Telefone", "Email", "Profissao", "Cidade", "UF", "Canal", "LinkOrigem", "Chamadas", "Status", "Plano", "PixConfirmado", "RefPix", "MotivoPerda", "Followup", "Observacao"];
+      const headers = ["Data", "Squad", "SDR", "Nome", "Telefone", "Email", "Profissao", "Bairro", "Cidade", "UF", "Canal", "LinkOrigem", "Chamadas", "Status", "Plano", "PixConfirmado", "RefPix", "MotivoPerda", "Followup", "Observacao"];
       const rows = allCompanyLeads.map((l) => [
-        l.dataContato, l.squadId, l.sdrNome, l.nome, l.telefone, l.email, l.profissao, l.cidade, l.estado, l.canal, l.linkOrigem, l.callCount || 0, l.status, l.plano, l.pixConfirmado ? "Sim" : "Não", l.pixComprovanteRef, l.motivoPerda, l.proximoFollowup, (l.observacao || "").replace(/[\r\n]+/g, " ")
+        l.dataContato, l.squadId, l.sdrNome, l.nome, l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.canal, l.linkOrigem, l.callCount || 0, l.status, l.plano, l.pixConfirmado ? "Sim" : "Não", l.pixComprovanteRef, l.motivoPerda, l.proximoFollowup, (l.observacao || "").replace(/[\r\n]+/g, " ")
       ].map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
       const blob = new Blob(["\uFEFF" + [headers.join(";"), ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
