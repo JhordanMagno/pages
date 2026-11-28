@@ -20,8 +20,39 @@ const ADMIN_EMAILS = new Set([
   "magnusdev.2000@gmail.com"
 ]);
 
-javascript:(()=>{const url=location.href;const txt=document.body.innerText||"";const title=(document.querySelector("h1")?.innerText||document.title||"").replace(/\s*\|\s*OLX.*/i,"").trim();const phoneMatch=txt.match(/(?:\+?55\s*)?\(?0?[1-9]{2}\)?\s*9?\d{4}[-\s]?\d{4}/);const phone=phoneMatch?phoneMatch[0].trim():"";const locMatch=txt.match(/([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)*)\s*[-–/]\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)*)\s*,?\s*([A-Z]{2})\b/);const payload={canal:"OLX",linkOrigem:url,nome:title,telefone:phone,bairro:locMatch?locMatch[1]:"",cidade:locMatch?locMatch[2]:"",estado:locMatch?locMatch[3]:""};try{localStorage.setItem("magnus_olx_draft",JSON.stringify(payload));}catch(e){}navigator.clipboard?.writeText(JSON.stringify(payload,null,2)).catch(()=>{});alert("Capturado da OLX!\n\nNome/Título: "+(payload.nome||"-")+"\nTelefone (texto): "+(payload.telefone||"Não visível no texto (ver imagem)")+"\nLocal: "+[payload.bairro,payload.cidade,payload.estado].filter(Boolean).join(" / ")+"\n\nDados salvos e copiados. Abrindo o CRM...");window.open("https://jhordanmagno.github.io/pages/crm.html?olxDraft=1","_blank");})();
+function consumeOlxDraftIfPresent() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("olxDraft") !== "1") return;
+  try {
+    const raw = localStorage.getItem("magnus_olx_draft");
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    localStorage.removeItem("magnus_olx_draft");
 
+    const openWhenReady = setInterval(() => {
+      if (currentUser && currentProfile && !$("lead-modal")) {
+        clearInterval(openWhenReady);
+        return;
+      }
+      if (currentUser && currentProfile && !$("app-view").classList.contains("hidden")) {
+        clearInterval(openWhenReady);
+        document.querySelector('.tab[data-tab="leads"]')?.click();
+        openModal();
+        if (draft.canal) $("ld-canal").value = draft.canal;
+        if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
+        if (draft.nome) $("ld-nome").value = draft.nome;
+        if (draft.telefone) $("ld-tel").value = draft.telefone;
+        if (draft.bairro) $("ld-bairro").value = draft.bairro;
+        if (draft.cidade) $("ld-cidade").value = draft.cidade;
+        if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
+        showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
+      }
+    }, 300);
+    setTimeout(() => clearInterval(openWhenReady), 15000);
+  } catch (e) {}
+}
+
+consumeOlxDraftIfPresent();
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app, "agendamagnus-db");
