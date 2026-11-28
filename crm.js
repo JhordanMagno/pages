@@ -1050,34 +1050,55 @@ function renderTeam() {
 //Captura OLX
  function consumeOlxDraftIfPresent() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("olxDraft") !== "1") return;
-  try {
-    const raw = localStorage.getItem("magnus_olx_draft");
-    if (!raw) return;
-    const draft = JSON.parse(raw);
-    localStorage.removeItem("magnus_olx_draft");
+  const hasFlag = params.get("olxDraft") === "1";
 
-    const openWhenReady = setInterval(() => {
-      if (currentUser && currentProfile && !$("lead-modal")) {
-        clearInterval(openWhenReady);
-        return;
+  const tryApplyDraft = () => {
+    const raw = localStorage.getItem("magnus_olx_draft");
+    if (!raw) return false;
+    if (!currentUser || !currentProfile || $("app-view").classList.contains("hidden")) {
+      return false;
+    }
+
+    try {
+      const draft = JSON.parse(raw);
+      document.querySelector('.tab[data-tab="leads"]')?.click();
+      openModal();
+      if (draft.canal) $("ld-canal").value = draft.canal;
+      if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
+      if (draft.nome) $("ld-nome").value = draft.nome;
+      if (draft.telefone) $("ld-tel").value = draft.telefone;
+      if (draft.bairro) $("ld-bairro").value = draft.bairro;
+      if (draft.cidade) $("ld-cidade").value = draft.cidade;
+      if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
+
+      // Só remove o rascunho depois que o modal foi aberto e preenchido com sucesso
+      localStorage.removeItem("magnus_olx_draft");
+      if (hasFlag && window.history?.replaceState) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
       }
-      if (currentUser && currentProfile && !$("app-view").classList.contains("hidden")) {
-        clearInterval(openWhenReady);
-        document.querySelector('.tab[data-tab="leads"]')?.click();
-        openModal();
-        if (draft.canal) $("ld-canal").value = draft.canal;
-        if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
-        if (draft.nome) $("ld-nome").value = draft.nome;
-        if (draft.telefone) $("ld-tel").value = draft.telefone;
-        if (draft.bairro) $("ld-bairro").value = draft.bairro;
-        if (draft.cidade) $("ld-cidade").value = draft.cidade;
-        if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
-        showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
-      }
-    }, 300);
-    setTimeout(() => clearInterval(openWhenReady), 15000);
-  } catch (e) {}
+      showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Tenta imediatamente se já estiver logado e também observa quando o login concluir
+  if (tryApplyDraft()) return;
+
+  const observer = new MutationObserver(() => {
+    if (tryApplyDraft()) observer.disconnect();
+  });
+
+  if ($("app-view")) {
+    observer.observe($("app-view"), { attributes: true, attributeFilter: ["class"] });
+  }
+
+  const poll = setInterval(() => {
+    if (tryApplyDraft()) clearInterval(poll);
+  }, 400);
+  setTimeout(() => clearInterval(poll), 30000);
 }
 
 consumeOlxDraftIfPresent();
