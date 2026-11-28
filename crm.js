@@ -1174,6 +1174,8 @@ function consumeOlxDraftIfPresent() {
       if (draft.canal) $("ld-canal").value = draft.canal;
       if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
       if (draft.nome) $("ld-nome").value = draft.nome;
+      if (draft.profissao) $("ld-prof").value = draft.profissao;
+      if (draft.sexo) $("ld-sexo").value = draft.sexo;
       if (draft.telefone) $("ld-tel").value = draft.telefone;
       if (draft.bairro) $("ld-bairro").value = draft.bairro;
       if (draft.cidade) $("ld-cidade").value = draft.cidade;
