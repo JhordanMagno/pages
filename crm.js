@@ -1,9 +1,4 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, deleteField, query, orderBy, onSnapshot, serverTimestamp, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -14,15 +9,23 @@ import {
   setPersistence,
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-const firebaseConfig = {
-  apiKey: "AIzaSyBDp8u-KbrKGXTHCNMKAtb_L9GOiSur31g",
-  authDomain: "agenda-magnus.firebaseapp.com",
-  projectId: "agenda-magnus",
-  storageBucket: "agenda-magnus.firebasestorage.app",
-  messagingSenderId: "458471195421",
-  appId: "1:458471195421:web:588b0569d8bd9f862f57f4",
-  measurementId: "G-D797QZR31L"
-};
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  deleteField,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  increment,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const ADMIN_UIDS = new Set([
   "xCWYveQCqXfqQoZOixN7levgXOm1"
