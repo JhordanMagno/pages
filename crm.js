@@ -1129,20 +1129,30 @@ $("btn-clear-filters").onclick = () => {
 
 // Captura OLX
 function consumeOlxDraftIfPresent() {
-  const params = new URLSearchParams(window.location.search);
-  const hasFlag = params.get("olxDraft") === "1";
+  const readDraftRaw = () => {
+    try {
+      return localStorage.getItem("magnus_olx_draft") || sessionStorage.getItem("magnus_olx_draft") || "";
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const clearDraftRaw = () => {
+    try { localStorage.removeItem("magnus_olx_draft"); } catch (e) {}
+    try { sessionStorage.removeItem("magnus_olx_draft"); } catch (e) {}
+  };
 
   const tryApplyDraft = () => {
-    const raw = localStorage.getItem("magnus_olx_draft");
+    const raw = readDraftRaw();
     if (!raw) return false;
-    if (!currentUser || !currentProfile || $("app-view").classList.contains("hidden")) {
-      return false;
-    }
+    if (!currentUser || !currentProfile) return false;
+    if ($("app-view")?.classList.contains("hidden")) return false;
 
     try {
       const draft = JSON.parse(raw);
       document.querySelector('.tab[data-tab="leads"]')?.click();
       openModal();
+
       if (draft.canal) $("ld-canal").value = draft.canal;
       if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
       if (draft.nome) $("ld-nome").value = draft.nome;
@@ -1151,8 +1161,8 @@ function consumeOlxDraftIfPresent() {
       if (draft.cidade) $("ld-cidade").value = draft.cidade;
       if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
 
-      localStorage.removeItem("magnus_olx_draft");
-      if (hasFlag && window.history?.replaceState) {
+      clearDraftRaw();
+      if (window.history?.replaceState) {
         window.history.replaceState({}, "", window.location.pathname);
       }
       showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
@@ -1164,18 +1174,11 @@ function consumeOlxDraftIfPresent() {
 
   if (tryApplyDraft()) return;
 
-  const observer = new MutationObserver(() => {
-    if (tryApplyDraft()) observer.disconnect();
-  });
-
-  if ($("app-view")) {
-    observer.observe($("app-view"), { attributes: true, attributeFilter: ["class"] });
-  }
-
   const poll = setInterval(() => {
     if (tryApplyDraft()) clearInterval(poll);
-  }, 400);
-  setTimeout(() => clearInterval(poll), 30000);
+  }, 300);
+
+  setTimeout(() => clearInterval(poll), 45000);
 }
 
 consumeOlxDraftIfPresent();
