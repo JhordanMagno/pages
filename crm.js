@@ -7,7 +7,8 @@ import {
   signOut,
   onAuthStateChanged,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore,
@@ -27,6 +28,16 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBDp8u-KbrKGXTHCNMKAtb_L9GOiSur31g",
+  authDomain: "agenda-magnus.firebaseapp.com",
+  projectId: "agenda-magnus",
+  storageBucket: "agenda-magnus.firebasestorage.app",
+  messagingSenderId: "458471195421",
+  appId: "1:458471195421:web:588b0569d8bd9f862f57f4",
+  measurementId: "G-D797QZR31L"
+};
+
 const ADMIN_UIDS = new Set([
   "xCWYveQCqXfqQoZOixN7levgXOm1"
 ]);
@@ -37,7 +48,6 @@ const ADMIN_EMAILS = new Set([
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(() => {});
 const db = getFirestore(app, "agendamagnus-db");
 
 let currentUser = null;
@@ -169,13 +179,20 @@ function getScopedLeads() {
 // Autenticação
 $("btn-google-login").onclick = async () => {
   $("login-error").textContent = "";
-  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch (e) { $("login-error").textContent = "Erro no login Google: " + e.message; }
+  const remember = $("login-remember")?.checked ?? true;
+  try {
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    $("login-error").textContent = "Erro no login Google: " + e.message;
+  }
 };
 
 $("btn-email-login").onclick = async () => {
   $("login-error").textContent = "";
+  const remember = $("login-remember")?.checked ?? true;
   try {
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     await signInWithEmailAndPassword(auth, $("login-email").value.trim(), $("login-pass").value);
   } catch (e) {
     $("login-error").textContent = "E-mail ou senha inválidos.";
@@ -1063,61 +1080,6 @@ function renderTeam() {
     };
   });
 }
-//Captura OLX
- function consumeOlxDraftIfPresent() {
-  const params = new URLSearchParams(window.location.search);
-  const hasFlag = params.get("olxDraft") === "1";
-
-  const tryApplyDraft = () => {
-    const raw = localStorage.getItem("magnus_olx_draft");
-    if (!raw) return false;
-    if (!currentUser || !currentProfile || $("app-view").classList.contains("hidden")) {
-      return false;
-    }
-
-    try {
-      const draft = JSON.parse(raw);
-      document.querySelector('.tab[data-tab="leads"]')?.click();
-      openModal();
-      if (draft.canal) $("ld-canal").value = draft.canal;
-      if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
-      if (draft.nome) $("ld-nome").value = draft.nome;
-      if (draft.telefone) $("ld-tel").value = draft.telefone;
-      if (draft.bairro) $("ld-bairro").value = draft.bairro;
-      if (draft.cidade) $("ld-cidade").value = draft.cidade;
-      if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
-
-      // Só remove o rascunho depois que o modal foi aberto e preenchido com sucesso
-      localStorage.removeItem("magnus_olx_draft");
-      if (hasFlag && window.history?.replaceState) {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, "", cleanUrl);
-      }
-      showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
-
-  // Tenta imediatamente se já estiver logado e também observa quando o login concluir
-  if (tryApplyDraft()) return;
-
-  const observer = new MutationObserver(() => {
-    if (tryApplyDraft()) observer.disconnect();
-  });
-
-  if ($("app-view")) {
-    observer.observe($("app-view"), { attributes: true, attributeFilter: ["class"] });
-  }
-
-  const poll = setInterval(() => {
-    if (tryApplyDraft()) clearInterval(poll);
-  }, 400);
-  setTimeout(() => clearInterval(poll), 30000);
-}
-
-consumeOlxDraftIfPresent();
 
 // Exportar CSV para a Planilha da Diretoria
 $("btn-export-csv").onclick = () => {
@@ -1163,5 +1125,57 @@ $("btn-clear-filters").onclick = () => {
   $("filter-status").value = "ALL";
   $("filter-plan").value = "ALL";
   renderLeads();
-
 };
+
+// Captura OLX
+function consumeOlxDraftIfPresent() {
+  const params = new URLSearchParams(window.location.search);
+  const hasFlag = params.get("olxDraft") === "1";
+
+  const tryApplyDraft = () => {
+    const raw = localStorage.getItem("magnus_olx_draft");
+    if (!raw) return false;
+    if (!currentUser || !currentProfile || $("app-view").classList.contains("hidden")) {
+      return false;
+    }
+
+    try {
+      const draft = JSON.parse(raw);
+      document.querySelector('.tab[data-tab="leads"]')?.click();
+      openModal();
+      if (draft.canal) $("ld-canal").value = draft.canal;
+      if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
+      if (draft.nome) $("ld-nome").value = draft.nome;
+      if (draft.telefone) $("ld-tel").value = draft.telefone;
+      if (draft.bairro) $("ld-bairro").value = draft.bairro;
+      if (draft.cidade) $("ld-cidade").value = draft.cidade;
+      if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
+
+      localStorage.removeItem("magnus_olx_draft");
+      if (hasFlag && window.history?.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  if (tryApplyDraft()) return;
+
+  const observer = new MutationObserver(() => {
+    if (tryApplyDraft()) observer.disconnect();
+  });
+
+  if ($("app-view")) {
+    observer.observe($("app-view"), { attributes: true, attributeFilter: ["class"] });
+  }
+
+  const poll = setInterval(() => {
+    if (tryApplyDraft()) clearInterval(poll);
+  }, 400);
+  setTimeout(() => clearInterval(poll), 30000);
+}
+
+consumeOlxDraftIfPresent();
