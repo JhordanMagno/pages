@@ -1128,28 +1128,46 @@ $("btn-clear-filters").onclick = () => {
 };
 
 // Captura OLX
+// Captura OLX
 function consumeOlxDraftIfPresent() {
-  const readDraftRaw = () => {
+  const decodeHashDraft = () => {
+    const hash = window.location.hash || "";
+    const match = hash.match(/olxDraft=([^&]+)/);
+    if (!match) return null;
     try {
-      return localStorage.getItem("magnus_olx_draft") || sessionStorage.getItem("magnus_olx_draft") || "";
+      const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(match[1]))));
+      return JSON.parse(jsonStr);
     } catch (e) {
-      return "";
+      return null;
     }
   };
 
-  const clearDraftRaw = () => {
+  const readDraft = () => {
+    const fromHash = decodeHashDraft();
+    if (fromHash) return fromHash;
+    try {
+      const raw = localStorage.getItem("magnus_olx_draft") || sessionStorage.getItem("magnus_olx_draft");
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const clearDraft = () => {
     try { localStorage.removeItem("magnus_olx_draft"); } catch (e) {}
     try { sessionStorage.removeItem("magnus_olx_draft"); } catch (e) {}
+    if (window.history?.replaceState) {
+      window.history.replaceState({}, "", window.location.pathname + window.location.search);
+    }
   };
 
   const tryApplyDraft = () => {
-    const raw = readDraftRaw();
-    if (!raw) return false;
+    const draft = readDraft();
+    if (!draft) return false;
     if (!currentUser || !currentProfile) return false;
     if ($("app-view")?.classList.contains("hidden")) return false;
 
     try {
-      const draft = JSON.parse(raw);
       document.querySelector('.tab[data-tab="leads"]')?.click();
       openModal();
 
@@ -1161,10 +1179,7 @@ function consumeOlxDraftIfPresent() {
       if (draft.cidade) $("ld-cidade").value = draft.cidade;
       if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
 
-      clearDraftRaw();
-      if (window.history?.replaceState) {
-        window.history.replaceState({}, "", window.location.pathname);
-      }
+      clearDraft();
       showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
       return true;
     } catch (e) {
