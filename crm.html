@@ -277,9 +277,14 @@
     .chart-box { position: relative; height: 280px; }
 
     /* Toolbar, Bulk Bar, Alertas & Table */
-    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
-    .toolbar .input { flex: 1; min-width: 210px; }
-    .toolbar select { width: auto; min-width: 160px; }
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .toolbar-search { grid-column: span 2; }
     .bulk-bar {
       display: flex;
       flex-wrap: wrap;
@@ -310,7 +315,7 @@
     .delete-req-item:last-child { border-bottom: none; padding-bottom: 0; }
 
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
-    table { width: 100%; border-collapse: collapse; min-width: 1080px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1120px; }
     th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid #1d2842; font-size: 13px; vertical-align: top; }
     th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f1629; }
     tr:last-child td { border-bottom: none; }
@@ -362,7 +367,7 @@
     }
     .modal {
       width: 100%;
-      max-width: 760px;
+      max-width: 780px;
       max-height: 92vh;
       overflow-y: auto;
       background: var(--panel);
@@ -391,6 +396,7 @@
 
     @media (max-width: 900px) {
       .grid-2, .form-grid, .podium-grid { grid-template-columns: 1fr; }
+      .toolbar-search { grid-column: span 1; }
     }
   </style>
 </head>
@@ -517,11 +523,34 @@
           <button id="btn-bulk-delete" class="btn btn-red btn-sm hidden">🗑️ Excluir Selecionados (Diretoria)</button>
         </div>
 
+        <!-- FILTROS AVANÇADOS (BUSCA GERAL + CANAL, PROFISSÃO, ESTADO, CIDADE, BAIRRO, STATUS, PLANO) -->
         <div class="toolbar">
-          <input id="filter-search" class="input" placeholder="Buscar por nome, telefone, bairro, cidade, link, profissão ou SDR..." />
+          <input id="filter-search" class="input toolbar-search" placeholder="Busca geral (nome, telefone, e-mail, sexo, link ou observação)..." />
           <select id="filter-sdr" class="hidden">
             <option value="ALL">Todos os SDRs</option>
           </select>
+          <select id="filter-canal">
+            <option value="ALL">Todos os Canais</option>
+            <option>Instagram</option>
+            <option>OLX</option>
+            <option>Facebook</option>
+            <option>WhatsApp</option>
+            <option>Ligação Fria</option>
+            <option>Indicação</option>
+            <option>Presencial</option>
+          </select>
+          <input id="filter-profissao" class="input" list="list-profissoes" placeholder="Filtrar Profissão..." />
+          <datalist id="list-profissoes"></datalist>
+
+          <input id="filter-estado" class="input" list="list-estados" maxlength="2" placeholder="Filtrar Estado (UF)..." />
+          <datalist id="list-estados"></datalist>
+
+          <input id="filter-cidade" class="input" list="list-cidades" placeholder="Filtrar Cidade..." />
+          <datalist id="list-cidades"></datalist>
+
+          <input id="filter-bairro" class="input" list="list-bairros" placeholder="Filtrar Bairro..." />
+          <datalist id="list-bairros"></datalist>
+
           <select id="filter-status">
             <option value="ALL">Todos os Status</option>
             <option>Novo Lead</option>
@@ -540,6 +569,7 @@
             <option>Essencial (R$ 34,90)</option>
             <option>PRO (R$ 79,90)</option>
           </select>
+          <button type="button" id="btn-clear-filters" class="btn btn-outline btn-sm">Limpar Filtros</button>
         </div>
 
         <div class="table-wrap">
@@ -548,7 +578,7 @@
               <tr>
                 <th id="th-select-all" class="hidden" style="width:36px;"><input type="checkbox" id="chk-select-all" title="Selecionar todos visíveis" /></th>
                 <th>Cadastro &amp; Contador SLA</th>
-                <th>Lead, Profissão &amp; Link</th>
+                <th>Lead, Sexo, Profissão &amp; Link</th>
                 <th>Contato &amp; Local</th>
                 <th>Chamadas</th>
                 <th>Status &amp; Plano</th>
@@ -622,6 +652,15 @@
         <input type="hidden" id="ld-id" />
         <div class="form-grid">
           <div><label>Nome do Lead *</label><input id="ld-nome" class="input" required /></div>
+          <div>
+            <label>Sexo</label>
+            <select id="ld-sexo">
+              <option value="Não informado">Não informado</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
           <div><label>Telefone / WhatsApp *</label><input id="ld-tel" class="input" placeholder="(47) 99999-9999" required /></div>
           <div><label>E-mail</label><input id="ld-email" class="input" type="email" /></div>
           <div><label>Profissão / Ramo *</label><input id="ld-prof" class="input" placeholder="Ex.: Barbeiro, Revendedora, MEI" required /></div>
@@ -640,7 +679,7 @@
               <option>Presencial</option>
             </select>
           </div>
-          <div class="form-full">
+          <div>
             <label>Link do Lead (Instagram, OLX, Facebook...)</label>
             <input id="ld-link" class="input" type="url" placeholder="https://instagram.com/... ou link do anúncio" />
           </div>
@@ -722,7 +761,6 @@
       measurementId: "G-D797QZR31L"
     };
 
-    // DIRETORIA MASTER (UID + E-MAILS AUTORIZADOS COMO DIRETOR)
     const ADMIN_UIDS = new Set([
       "xCWYveQCqXfqQoZOixN7levgXOm1"
     ]);
@@ -751,6 +789,7 @@
     const $ = (id) => document.getElementById(id);
     const fmtBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const todayISO = () => new Date().toISOString().slice(0, 10);
+    const normTxt = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const normalizeRole = (r) => {
       const val = String(r || "SDR").trim().toUpperCase();
       if (val === "ADMIN" || val === "DIRETOR" || val === "DIRETORIA") return "ADMIN";
@@ -971,6 +1010,7 @@
 
         const scoped = getScopedLeads();
         $("tab-leads-count").textContent = scoped.length;
+        updateFilterSuggestions(scoped);
         renderArenaAndPodium();
         renderDashboard();
         renderDeleteRequestsBanner();
@@ -991,6 +1031,17 @@
         renderDashboard();
         renderLeads();
       });
+    }
+
+    function updateFilterSuggestions(leads) {
+      const fillDatalist = (id, values) => {
+        const unique = [...new Set(values.map((v) => String(v || "").trim()).filter(Boolean))].sort();
+        $(id).innerHTML = unique.map((v) => `<option value="${v.replace(/"/g, "&quot;")}"></option>`).join("");
+      };
+      fillDatalist("list-profissoes", leads.map((l) => l.profissao));
+      fillDatalist("list-estados", leads.map((l) => l.estado));
+      fillDatalist("list-cidades", leads.map((l) => l.cidade));
+      fillDatalist("list-bairros", leads.map((l) => l.bairro));
     }
 
     function getAssignableMembers() {
@@ -1287,10 +1338,15 @@
       showToast("❌ Pedido de exclusão recusado. Lead mantido no CRM.");
     }
 
-    // Render Tabela de Leads
+    // Render Tabela de Leads com Filtros por Canal, Profissão, Estado, Cidade, Bairro, Status e Plano
     function renderLeads() {
       const scopedLeads = getScopedLeads();
-      const term = $("filter-search").value.toLowerCase().trim();
+      const term = normTxt($("filter-search").value);
+      const fCanal = $("filter-canal").value;
+      const fProf = normTxt($("filter-profissao").value);
+      const fEstado = normTxt($("filter-estado").value);
+      const fCidade = normTxt($("filter-cidade").value);
+      const fBairro = normTxt($("filter-bairro").value);
       const st = $("filter-status").value;
       const pl = $("filter-plan").value;
       const sdrFilter = $("filter-sdr").value;
@@ -1307,10 +1363,15 @@
           return false;
         }
         if (pl !== "ALL" && l.plano !== pl) return false;
+        if (fCanal !== "ALL" && (l.canal || "") !== fCanal) return false;
+        if (fProf && !normTxt(l.profissao).includes(fProf)) return false;
+        if (fEstado && !normTxt(l.estado).includes(fEstado)) return false;
+        if (fCidade && !normTxt(l.cidade).includes(fCidade)) return false;
+        if (fBairro && !normTxt(l.bairro).includes(fBairro)) return false;
         if (canManage && sdrFilter !== "ALL" && l.sdrUid !== sdrFilter) return false;
         if (!term) return true;
-        return [l.nome, l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.sdrNome, l.linkOrigem, l.canal, l.observacao]
-          .filter(Boolean).join(" ").toLowerCase().includes(term);
+        return [l.nome, l.sexo, l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.sdrNome, l.linkOrigem, l.canal, l.observacao]
+          .filter(Boolean).map(normTxt).join(" ").includes(term);
       });
 
       const assignable = getAssignableMembers();
@@ -1333,6 +1394,9 @@
         const calls = Number(l.callCount || 0);
         const cityUf = [l.cidade, l.estado].filter(Boolean).join(" / ");
         const localStr = [l.bairro, cityUf].filter(Boolean).join(" • ");
+        const sexoBadge = l.sexo && l.sexo !== "Não informado"
+          ? `<span class="badge ${l.sexo === "Feminino" ? "b-purple" : "b-blue"}" style="margin-left:4px;">${l.sexo}</span>`
+          : "";
 
         const transferSelect = canManage ? `
           <select class="input" style="padding:4px 6px; font-size:11px; margin-top:5px;" data-reassign="${l.id}">
@@ -1364,7 +1428,7 @@
               </div>
             </td>
             <td>
-              <strong>${l.nome || "-"}</strong>
+              <strong>${l.nome || "-"}</strong>${sexoBadge}
               <div class="sub-txt">${l.profissao || "-"} • <span class="badge b-muted">${l.canal || "-"}</span></div>
               ${safeLink ? `<div style="margin-top:4px;"><a href="${safeLink}" target="_blank" rel="noopener" class="btn btn-blue btn-sm">🔗 Abrir Link Origem</a></div>` : (l.linkOrigem ? `<div class="sub-txt link-truncate" title="${l.linkOrigem}">${l.linkOrigem}</div>` : "")}
             </td>
@@ -1404,7 +1468,7 @@
             </td>
           </tr>
         `;
-      }).join("") : `<tr><td colspan="${canManage ? 9 : 8}" style="text-align:center;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+      }).join("") : `<tr><td colspan="${canManage ? 9 : 8}" style="text-align:center;color:var(--muted);">Nenhum lead encontrado com os filtros selecionados.</td></tr>`;
 
       updateSelectionUI();
 
@@ -1564,6 +1628,7 @@
       $("modal-title").textContent = lead ? "Editar Lead" : "Novo Lead";
       $("ld-id").value = lead?.id || "";
       $("ld-nome").value = lead?.nome || "";
+      $("ld-sexo").value = lead?.sexo || "Não informado";
       $("ld-tel").value = lead?.telefone || "";
       $("ld-email").value = lead?.email || "";
       $("ld-prof").value = lead?.profissao || "";
@@ -1598,6 +1663,7 @@
 
       const payload = {
         nome: $("ld-nome").value.trim(),
+        sexo: $("ld-sexo").value,
         telefone: $("ld-tel").value.trim(),
         email: $("ld-email").value.trim(),
         profissao: $("ld-prof").value.trim(),
@@ -1732,9 +1798,9 @@
 
     // Exportar CSV para a Planilha da Diretoria
     $("btn-export-csv").onclick = () => {
-      const headers = ["Data", "Squad", "SDR", "Nome", "Telefone", "Email", "Profissao", "Bairro", "Cidade", "UF", "Canal", "LinkOrigem", "Chamadas", "Status", "Plano", "PixConfirmado", "RefPix", "MotivoPerda", "Followup", "Observacao"];
+      const headers = ["Data", "Squad", "SDR", "Nome", "Sexo", "Telefone", "Email", "Profissao", "Bairro", "Cidade", "UF", "Canal", "LinkOrigem", "Chamadas", "Status", "Plano", "PixConfirmado", "RefPix", "MotivoPerda", "Followup", "Observacao"];
       const rows = allCompanyLeads.map((l) => [
-        l.dataContato, l.squadId, l.sdrNome, l.nome, l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.canal, l.linkOrigem, l.callCount || 0, l.status, l.plano, l.pixConfirmado ? "Sim" : "Não", l.pixComprovanteRef, l.motivoPerda, l.proximoFollowup, (l.observacao || "").replace(/[\r\n]+/g, " ")
+        l.dataContato, l.squadId, l.sdrNome, l.nome, l.sexo || "Não informado", l.telefone, l.email, l.profissao, l.bairro, l.cidade, l.estado, l.canal, l.linkOrigem, l.callCount || 0, l.status, l.plano, l.pixConfirmado ? "Sim" : "Não", l.pixComprovanteRef, l.motivoPerda, l.proximoFollowup, (l.observacao || "").replace(/[\r\n]+/g, " ")
       ].map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
       const blob = new Blob(["\uFEFF" + [headers.join(";"), ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -1754,10 +1820,27 @@
       };
     });
 
-    ["filter-search", "filter-sdr", "filter-status", "filter-plan"].forEach((id) => {
+    [
+      "filter-search", "filter-sdr", "filter-canal",
+      "filter-profissao", "filter-estado", "filter-cidade", "filter-bairro",
+      "filter-status", "filter-plan"
+    ].forEach((id) => {
       $(id).addEventListener("input", renderLeads);
       $(id).addEventListener("change", renderLeads);
     });
+
+    $("btn-clear-filters").onclick = () => {
+      $("filter-search").value = "";
+      $("filter-sdr").value = "ALL";
+      $("filter-canal").value = "ALL";
+      $("filter-profissao").value = "";
+      $("filter-estado").value = "";
+      $("filter-cidade").value = "";
+      $("filter-bairro").value = "";
+      $("filter-status").value = "ALL";
+      $("filter-plan").value = "ALL";
+      renderLeads();
+    };
   </script>
 </body>
 </html>
