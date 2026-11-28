@@ -20,39 +20,6 @@ const ADMIN_EMAILS = new Set([
   "magnusdev.2000@gmail.com"
 ]);
 
-function consumeOlxDraftIfPresent() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("olxDraft") !== "1") return;
-  try {
-    const raw = localStorage.getItem("magnus_olx_draft");
-    if (!raw) return;
-    const draft = JSON.parse(raw);
-    localStorage.removeItem("magnus_olx_draft");
-
-    const openWhenReady = setInterval(() => {
-      if (currentUser && currentProfile && !$("lead-modal")) {
-        clearInterval(openWhenReady);
-        return;
-      }
-      if (currentUser && currentProfile && !$("app-view").classList.contains("hidden")) {
-        clearInterval(openWhenReady);
-        document.querySelector('.tab[data-tab="leads"]')?.click();
-        openModal();
-        if (draft.canal) $("ld-canal").value = draft.canal;
-        if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
-        if (draft.nome) $("ld-nome").value = draft.nome;
-        if (draft.telefone) $("ld-tel").value = draft.telefone;
-        if (draft.bairro) $("ld-bairro").value = draft.bairro;
-        if (draft.cidade) $("ld-cidade").value = draft.cidade;
-        if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
-        showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
-      }
-    }, 300);
-    setTimeout(() => clearInterval(openWhenReady), 15000);
-  } catch (e) {}
-}
-
-consumeOlxDraftIfPresent();
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app, "agendamagnus-db");
@@ -1125,4 +1092,38 @@ $("btn-clear-filters").onclick = () => {
   $("filter-status").value = "ALL";
   $("filter-plan").value = "ALL";
   renderLeads();
+
+  function consumeOlxDraftIfPresent() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("olxDraft") !== "1") return;
+  try {
+    const raw = localStorage.getItem("magnus_olx_draft");
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    localStorage.removeItem("magnus_olx_draft");
+
+    const openWhenReady = setInterval(() => {
+      if (currentUser && currentProfile && !$("lead-modal")) {
+        clearInterval(openWhenReady);
+        return;
+      }
+      if (currentUser && currentProfile && !$("app-view").classList.contains("hidden")) {
+        clearInterval(openWhenReady);
+        document.querySelector('.tab[data-tab="leads"]')?.click();
+        openModal();
+        if (draft.canal) $("ld-canal").value = draft.canal;
+        if (draft.linkOrigem) $("ld-link").value = draft.linkOrigem;
+        if (draft.nome) $("ld-nome").value = draft.nome;
+        if (draft.telefone) $("ld-tel").value = draft.telefone;
+        if (draft.bairro) $("ld-bairro").value = draft.bairro;
+        if (draft.cidade) $("ld-cidade").value = draft.cidade;
+        if (draft.estado) $("ld-uf").value = draft.estado.toUpperCase();
+        showToast("⚡ Dados da OLX carregados — confira o número/nome e salve!");
+      }
+    }, 300);
+    setTimeout(() => clearInterval(openWhenReady), 15000);
+  } catch (e) {}
+}
+
+consumeOlxDraftIfPresent();
 };
